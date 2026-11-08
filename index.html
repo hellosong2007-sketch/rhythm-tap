@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>เกมตบจังหวะ</title>
+<meta name="description" content="เกมฝึกฟังจังหวะหนึ่งห้องเสียง แล้วตบกลับให้แม่น 10 รอบ วัดผลเป็นมิลลิวินาที พร้อม 3 ระดับความยาก">
+<meta name="theme-color" content="#dfe9ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1a21" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23c4421f'/%3E%3Cpath%20d='M12%2023V7l9-2.4v5.2l-6%201.6V23a4.2%204.2%200%201%201-3-4z'%20fill='%23fff'/%3E%3C/svg%3E">
+<meta property="og:title" content="เกมตบจังหวะ">
+<meta property="og:description" content="เกมฝึกฟังจังหวะหนึ่งห้องเสียง แล้วตบกลับให้แม่น 10 รอบ วัดผลเป็นมิลลิวินาที พร้อม 3 ระดับความยาก">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="th_TH">
+<style>
+/* ---------- โทเคนสี (ธีมสว่าง) ---------- */
+:root{
+  --bg:#dfe9ef; --surface:#ffffff; --surface-2:#f3f8fa;
+  --line:#c6d6e0; --line-strong:#b5c8d4;
+  --text:#17252f; --text-soft:#33454f; --muted:#5f7584;
+  --action:#c4421f; --action-ink:#ffffff; --action-soft:#fdece7;
+  --blue:#3f6f8d; --blue-soft:#e3eef5;
+  --good:#2e7d59; --warn:#9a6a1f; --bad:#b3261e;
+  --shadow-soft:rgba(15,26,33,.16);
+  --pad-ring:rgba(255,255,255,.4);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0f1a21; --surface:#172630; --surface-2:#1c2f3b;
+    --line:#2c4150; --line-strong:#3a5263;
+    --text:#e6eef3; --text-soft:#c3d3dc; --muted:#8ea3b1;
+    --action:#f07a5a; --action-ink:#1b0e09; --action-soft:#3a221b;
+    --blue:#8cb8d3; --blue-soft:#1d3442;
+    --good:#7fd1a6; --warn:#e3b04b; --bad:#ff8a80;
+    --shadow-soft:rgba(0,0,0,.4);
+    --pad-ring:rgba(27,14,9,.4);
+  }
+}
+/* ---------- พื้นฐาน ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:"Sarabun","Leelawadee UI","Noto Sans Thai",Thonburi,Tahoma,system-ui,sans-serif;
+  font-size:16px;line-height:1.6;overflow-x:hidden;
+}
+button{font-family:inherit}
+.app{
+  max-width:560px;margin:0 auto;
+  padding:12px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left));
+}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.hidden{display:none!important}
+h1{font-size:22px;font-weight:700;margin:10px 0 6px;text-wrap:balance;text-align:center}
+.round{
+  font-weight:700;color:var(--text-soft);
+  font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;
+}
+/* ---------- แถบควบคุม ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;margin:6px 0 14px}
+.segwrap{display:flex;align-items:center;gap:8px;flex:1;min-width:150px}
+.segwrap.grow{flex:1 1 100%}
+.seglabel{font-size:14.4px;font-weight:700;color:var(--muted);white-space:nowrap}
+.seg{
+  display:flex;flex:1;gap:3px;padding:3px;min-width:0;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+}
+.seg button{
+  flex:1;min-height:44px;min-width:44px;padding:4px 8px;border:0;border-radius:9px;
+  background:transparent;color:var(--text);font-weight:600;font-size:16px;
+  touch-action:manipulation;cursor:pointer;
+}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:inset 0 0 0 1px var(--blue)}
+.seg button:disabled{opacity:.5;cursor:default}
+.unit{font-size:12.8px;font-weight:700;color:var(--muted);white-space:nowrap}
+/* ---------- การ์ดสเตจ: ห้องเพลงหนึ่งห้อง ---------- */
+.stage{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:14px 16px 12px;overflow:hidden;
+}
+.stage.your-turn{outline:2px solid var(--action);outline-offset:2px}
+.stage-top{display:flex;justify-content:space-between;align-items:center}
+.nums{position:relative;height:22px;margin:0 2px;font-variant-numeric:tabular-nums}
+.nums i{
+  position:absolute;top:0;transform:translateX(-50%);font-style:normal;
+  color:var(--muted);font-weight:600;font-size:14.4px;
+}
+.lane{position:relative;height:128px}
+.rules{position:absolute;inset:0;pointer-events:none}
+.rules i{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+.rules i.strong{width:2px;background:var(--line-strong)}
+.mk{
+  position:absolute;border-radius:50%;width:22px;height:22px;
+  transform:translate(-50%,-50%) scale(1);
+  transition:background-color .12s,box-shadow .12s,transform .12s;
+}
+.mk.exp{top:64px;background:var(--blue)}
+.mk.exp.ghost{background:transparent;box-shadow:inset 0 0 0 2px var(--blue)}
+.mk.exp.on{background:var(--action);transform:translate(-50%,-50%) scale(1.2)}
+.mk.tap{top:26px;width:20px;height:20px}
+.mk.miss{
+  top:64px;background:transparent;box-shadow:inset 0 0 0 2px var(--bad);color:var(--bad);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:15px;line-height:1;
+}
+.good{background-color:var(--good)}.warn{background-color:var(--warn)}.bad{background-color:var(--bad)}
+.conn{position:absolute;top:40px;width:2px;height:22px;transform:translateX(-50%)}
+.conn.good{background:var(--good)}.conn.warn{background:var(--warn)}.conn.bad{background:var(--bad)}
+.tlabel{
+  position:absolute;transform:translateX(-50%);white-space:nowrap;
+  font-size:14.4px;font-weight:600;font-variant-numeric:tabular-nums;
+}
+.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+label.good,label.warn,label.bad,span.good,span.bad{background:none}
+.tlabel.good{color:var(--good)}.tlabel.warn{color:var(--warn)}.tlabel.bad{color:var(--bad)}
+.tlabel.r1{top:74px}.tlabel.r2{top:98px}
+.playhead{
+  position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--action);
+  transform:translateX(-50%);display:none;
+}
+.playhead.show{display:block}
+.status{margin:12px 0 2px;font-size:16px;font-weight:700;min-height:1.6em}
+/* ---------- แผงตบ (ตัวเอก) ---------- */
+.padzone{display:flex;flex-direction:column;align-items:center;gap:10px;margin:24px 0 8px}
+#pad{
+  width:176px;height:176px;border-radius:50%;border:0;cursor:pointer;
+  background:var(--action);color:var(--action-ink);
+  font-size:28px;font-weight:700;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 6px 20px var(--shadow-soft);
+  transition:transform .06s,box-shadow .06s;
+}
+#pad:active{
+  transform:scale(.97);
+  box-shadow:inset 0 0 0 2px var(--pad-ring),0 6px 20px var(--shadow-soft);
+}
+@media (min-width:480px){#pad{width:200px;height:200px}}
+.hint{margin:0;font-size:14.4px;font-weight:700;color:var(--muted)}
+/* ---------- ผลรอบ ---------- */
+.result{margin:12px 0 2px}
+#resultTitle{margin:0 0 4px;font-weight:700;font-variant-numeric:tabular-nums}
+.dots{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14.4px;color:var(--text-soft)}
+.dots .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:6px}
+/* ---------- ปุ่มการทำงาน ---------- */
+.actions{display:flex;gap:12px;margin:16px 0 6px}
+.primary,.secondary{
+  min-height:52px;border-radius:12px;font-weight:700;font-size:18px;
+  touch-action:manipulation;cursor:pointer;transition:transform .12s;
+}
+.primary{flex:1;border:0;background:var(--action);color:var(--action-ink)}
+.primary:active{transform:scale(.98)}
+.primary:disabled{opacity:.5;cursor:default}
+.secondary{
+  border:1px solid var(--line);background:var(--surface-2);color:var(--text);
+  font-weight:600;font-size:16px;
+}
+.secondary:active{transform:scale(.98)}
+.secondary:disabled{opacity:.5;cursor:default}
+/* ---------- ตั้งค่า ---------- */
+details.settings{
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;
+  padding:2px 16px 10px;margin:14px 0 4px;
+}
+summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px}
+summary::after{content:"▾";color:var(--muted);font-size:14.4px}
+details[open] summary::after{content:"▴"}
+.setrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:8px 0}
+.setrow>label{flex:1 1 140px;margin:0;font-size:16px}
+.setrow input[type=range]{flex:2 1 150px;min-height:44px;accent-color:var(--action);touch-action:manipulation}
+.readout{
+  min-width:62px;text-align:right;font-weight:700;font-size:12.8px;
+  font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums;color:var(--text-soft);
+}
+.setrow .primary,.setrow .secondary{flex:1 1 200px;min-height:44px;font-size:16px}
+.setnote{margin:4px 0 8px;font-size:14.4px;color:var(--text-soft)}
+/* ---------- จบเกม ---------- */
+.over{text-align:center;padding:8px 0 4px}
+.over h2{font-size:28px;font-weight:700;margin:6px 0;text-wrap:balance}
+.bigscore{font-size:64px;line-height:1.15;font-weight:700;font-variant-numeric:tabular-nums}
+.bigscore small{font-size:22px;font-weight:600;color:var(--text-soft)}
+.over p{margin:8px 0}
+#overComment{font-size:18px;font-weight:700}
+.over .primary{margin-top:10px;width:100%}
+/* ---------- ท้ายหน้า ---------- */
+footer{margin:18px 0 8px;text-align:center;font-size:14.4px;color:var(--text-soft)}
+#storageNote{display:none;margin-top:6px;font-weight:700;color:var(--bad)}
+/* ---------- จอแคบและการเคลื่อนไหว ---------- */
+@media (max-width:380px){
+  .mk{width:18px;height:18px}
+  .mk.tap{top:28px}
+  .conn{top:42px;height:20px}
+  .tlabel{font-size:12.8px}
+  .tlabel.r1{top:72px}.tlabel.r2{top:96px}
+}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <h1>เกมตบจังหวะ</h1>
+    <div class="round" id="roundLbl">รอบ –/10</div>
+  </header>
+
+  <section class="controls">
+    <div class="segwrap grow">
+      <div class="seg" id="segLevel" role="group" aria-label="ระดับความยาก">
+        <button type="button" data-level="easy" aria-pressed="true">ง่าย</button>
+        <button type="button" data-level="medium" aria-pressed="false">กลาง</button>
+        <button type="button" data-level="hard" aria-pressed="false">ยาก</button>
+      </div>
+    </div>
+    <div class="segwrap">
+      <span class="seglabel">ความเร็ว</span>
+      <div class="seg" id="segBpm" role="group" aria-label="ความเร็ว">
+        <button type="button" data-bpm="60" aria-pressed="false">60</button>
+        <button type="button" data-bpm="80" aria-pressed="true">80</button>
+        <button type="button" data-bpm="100" aria-pressed="false">100</button>
+      </div>
+      <span class="unit">BPM</span>
+    </div>
+  </section>
+
+  <section class="stage" id="stage">
+    <div id="playArea">
+      <div class="stage-top">
+        <div class="nums" aria-hidden="true">
+          <i style="left:0">1</i><i style="left:25%">2</i><i style="left:50%">3</i><i style="left:75%">4</i>
+        </div>
+      </div>
+      <div class="lane" id="lane">
+        <div class="rules" aria-hidden="true">
+          <i class="strong" style="left:0"></i>
+          <i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i>
+          <i class="strong" style="left:calc(100% - 2px)"></i>
+        </div>
+      </div>
+      <p class="status" id="status" aria-live="polite">กดเริ่มเล่น แล้วฟังจังหวะให้ดี</p>
+    </div>
+    <div class="over hidden" id="overPanel">
+      <h2>จบเกม</h2>
+      <div class="bigscore"><span id="overTotal">0</span> <small>/ 1000</small></div>
+      <p id="overComment"></p>
+      <p id="overBest"></p>
+      <p id="overAvg"></p>
+      <button type="button" class="primary" id="btnAgain">เล่นอีกครั้ง</button>
+    </div>
+  </section>
+
+  <section class="padzone">
+    <button type="button" id="pad" aria-label="ตบ">ตบ</button>
+    <p class="hint">กด Space หรือแตะวงกลม</p>
+  </section>
+
+  <section class="result hidden" id="resultSec">
+    <p id="resultTitle">ผลรอบนี้</p>
+    <div class="dots" id="resultDots"></div>
+  </section>
+
+  <section class="actions">
+    <button type="button" class="primary" id="btnMain">เริ่มเล่น</button>
+    <button type="button" class="secondary" id="btnReplay">ฟังอีกครั้ง</button>
+    <button type="button" class="secondary" id="btnRestart">เริ่มใหม่</button>
+  </section>
+
+  <details class="settings">
+    <summary>ตั้งค่า</summary>
+    <div class="setrow">
+      <label for="volInput">ระดับเสียง</label>
+      <input type="range" id="volInput" min="0" max="100" step="1" value="25">
+      <span class="readout" id="volOut">25</span>
+    </div>
+    <div class="setrow">
+      <label for="latInput">ชดเชยความหน่วงของเสียง</label>
+      <input type="range" id="latInput" min="-200" max="200" step="10" value="0">
+      <span class="readout" id="latOut">0 ms</span>
+    </div>
+    <p class="setnote">หูฟังบลูทูธมักส่งเสียงช้ากว่าจริง ลองวัดอัตโนมัติแล้วปรับค่านี้</p>
+    <div class="setrow">
+      <button type="button" class="secondary" id="btnCalib">วัดความหน่วงให้อัตโนมัติ</button>
+      <button type="button" class="secondary" id="btnTest">ทดสอบเสียง</button>
+    </div>
+  </details>
+
+  <footer>
+    เกมตบจังหวะ · สร้างด้วย AI ช่วย · วิชา 3500230
+    <div id="storageNote">เบราว์เซอร์นี้เก็บคะแนนสูงสุดไม่ได้ เกมยังเล่นได้ตามปกติ</div>
+  </footer>
+</main>
+<script>
+'use strict';
+(function(){
+/* ---------- ยูทิลิตี ---------- */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function setStatus(t){$('status').textContent=t;}
+function setRound(t){$('roundLbl').textContent=t;}
+function vis(node,on){node.classList.toggle('hidden',!on);}
+
+/* ---------- พื้นที่เก็บข้อมูล (localStorage พร้อมสำรองในหน่วยความจำ) ---------- */
+var storage=(function(){
+  var avail=false;
+  try{localStorage.setItem('rt-probe','1');localStorage.removeItem('rt-probe');avail=true;}catch(e){avail=false;}
+  var mem={};
+  return {
+    ok:avail,
+    get:function(k,d){
+      var v=null;
+      try{var raw=localStorage.getItem(k);v=(raw==null)?null:JSON.parse(raw);}catch(e){v=null;}
+      if(v===null&&mem[k]!==undefined)v=mem[k];
+      return (v===null||v===undefined)?d:v;
+    },
+    set:function(k,val){
+      mem[k]=val;
+      try{localStorage.setItem(k,JSON.stringify(val));}catch(e){}
+    }
+  };
+})();
+if(!storage.ok){$('storageNote').style.display='block';}
+
+/* ---------- สถานะหลักของเกม ---------- */
+var POOLS={
+  easy:[[0,1,2,3],[0,2],[0,1,2],[1,2,3],[0,2,3]],
+  medium:[[0,0.5,1,2],[0,1,2,2.5],[0,1,1.5,3],[0,2,2.5,3]],
+  hard:[[0,0.5,1.5,2,2.5,3.5],[0.5,1,2,2.5,3],[0,1.5,2,3,3.5],[0,0.5,1,2.5,3.5]]
+};
+var state='idle';
+var levelName='easy', bpm=80, vol=25, latMs=0;
+var ctx=null, master=null;
+var anchor={audio:0,perf:0};
+var round=0, roundScores=[], errorsMs=[], lastPatternIdx=-1;
+var pattern=[], markerEls=[], notes=[], steps=[], scheduled=[];
+var tapsArr=[], expected=[], winSec=0.25, barLen=0;
+var lSv=0, c2Sv=0, pSv=0;
+var moveFrom=0, moveTo=0, rafId=0, rafActive=false;
+var playhead=null;
+var stage=$('stage'), lane=$('lane');
+var calib={clicks:[],used:{},errs:[],end:0};
+
+latMs=clamp(Math.round((Number(storage.get('rhythm-tap-latency-v1',0))||0)/10)*10,-200,200);
+$('latInput').value=String(latMs);
+$('latOut').textContent=latMs+' ms';
+
+/* ---------- เว็บออดิโอ (สร้างเฉย ๆ รอจนกว่าจะมีการสัมผัสครั้งแรก) ---------- */
+function ensureAudio(){
+  if(!ctx){
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    ctx=new AC();
+    master=ctx.createGain();
+    master.gain.value=(vol/100)*0.8;
+    master.connect(ctx.destination);
+  }
+  if(ctx.state==='suspended'&&ctx.resume){ctx.resume();}
+}
+function tone(freq,type,start,dur,mul){
+  if(!ctx)return;
+  var o=ctx.createOscillator(), g=ctx.createGain();
+  o.type=type;o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,start);
+  g.gain.linearRampToValueAtTime(mul,start+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  o.connect(g);g.connect(master);
+  o.start(start);o.stop(start+dur+0.02);
+  scheduled.push(o);
+}
+function killScheduled(){
+  scheduled.forEach(function(o){try{o.stop(ctx.currentTime);}catch(e){}});
+  scheduled=[];
+}
+/* คลิกนับ 1-2-3-4: เสียงคลิกเบา คลิกแรกเกรง */
+function clicks(t,beat){
+  for(var i=0;i<4;i++){
+    tone(i===0?440:220,'sine',t+i*beat,0.04,i===0?0.8:0.45);
+  }
+}
+
+/* ---------- รอบเกม: นับ 1 → ฟัง → นับ 2 → ตบ → ให้คะแนน ---------- */
+function beginRound(){
+  round++;
+  setRound('รอบ '+round+'/10');
+  var pool=POOLS[levelName], idx;
+  /* ห้ามใช้แพตเทิร์นเดิมติดกัน */
+  if(pool.length>1){do{idx=Math.floor(Math.random()*pool.length);}while(idx===lastPatternIdx);}else{idx=0;}
+  lastPatternIdx=idx;
+  pattern=pool[idx];
+  ensureAudio();
+  var beat=60/bpm;
+  barLen=4*beat;
+  anchor={audio:ctx.currentTime,perf:performance.now()};
+  tapsArr=[];notes=[];steps=[];
+  buildStage(pattern);
+  /* หน้าต่างการจับคู่ = 0.45 × ช่องว่างเล็กสุด ปิดที่ 0.25 วินาที */
+  var sorted=pattern.slice().sort(function(a,b){return a-b;});
+  var gap=(sorted.length===1)?1:sorted[sorted.length-1]-sorted[0];
+  for(var i=1;i<sorted.length;i++){gap=Math.min(gap,sorted[i]-sorted[i-1]);}
+  winSec=Math.min(0.25,0.45*gap);
+  var t0=ctx.currentTime+0.1;
+  lSv=t0+barLen+0.3;
+  c2Sv=lSv+barLen+0.3;
+  pSv=c2Sv+barLen;
+  expected=pattern.map(function(b){return pSv+b*beat;});
+  clicks(t0,beat);
+  pattern.forEach(function(b,i){
+    var t=lSv+b*beat;
+    tone(880,'sine',t,0.07,1);           /* โน้ตรูปแบบ: 880 Hz 70 ms */
+    notes.push({t:t,el:markerEls[i],lit:false,dim:false});
+  });
+  clicks(c2Sv,beat);
+  state='countIn1';
+  setStatus('นับ 1-2-3-4');
+  vis($('resultSec'),false);
+  steps=[
+    {t:lSv,fn:enterListen},
+    {t:c2Sv,fn:enterCount2},
+    {t:pSv,fn:enterPlay},
+    {t:pSv+barLen+0.3,fn:finishRound}
+  ];
+  setActive(true);
+  refresh();
+}
+function buildStage(pat){
+  lane.innerHTML='';
+  var rules=document.createElement('div');
+  rules.className='rules';
+  rules.innerHTML='<i class="strong" style="left:0"></i>'
+    +'<i style="left:25%"></i><i style="left:50%"></i><i style="left:75%"></i>'
+    +'<i class="strong" style="left:calc(100% - 2px)"></i>';
+  lane.appendChild(rules);
+  playhead=document.createElement('div');
+  playhead.className='playhead';
+  lane.appendChild(playhead);
+  markerEls=pat.map(function(b){
+    var m=document.createElement('div');
+    m.className='mk exp';
+    m.style.left=(b/4*100)+'%';   /* ตำแหน่งตามสัดส่วนจังหวะในห้อง */
+    lane.appendChild(m);
+    return m;
+  });
+}
+function showHead(a,b){moveFrom=a;moveTo=b;playhead.style.left='0%';playhead.classList.add('show');}
+function hideHead(){if(playhead)playhead.classList.remove('show');}
+function enterListen(){state='listen';setStatus('ฟังให้ดี…');showHead(lSv,lSv+barLen);}
+function enterCount2(){state='countIn2';setStatus('เตรียมตบ…');hideHead();}
+function enterPlay(){
+  state='play';
+  setStatus('ตาคุณ! ตบตามเลย');
+  markerEls.forEach(function(m){m.classList.add('ghost');});
+  stage.classList.add('your-turn');
+  showHead(pSv,pSv+barLen);
+}
+
+/* ---------- วงจรวาดภาพและตัวยกระดับสถานะ ----------
+   เสถียรภาพ: เสียงจัดคิวด้วยนาฬิกาออดิโอ, ตรรกะเฟสใช้ tick เพื่อไม่ค้างเมื่อเบราว์เซอร์หยุด rAF ชั่วคราว (หน้าต่างถูกบัง) */
+function tick(){
+  if(!rafActive||!ctx)return;
+  var now=ctx.currentTime;
+  while(steps.length&&now>=steps[0].t){steps.shift().fn();}
+  notes.forEach(function(n){
+    if(!n.lit&&now>=n.t){n.lit=true;n.el.classList.add('on');}
+    else if(n.lit&&!n.dim&&now>=n.t+0.12){n.dim=true;n.el.classList.remove('on');}
+  });
+  if(playhead&&playhead.classList.contains('show')&&moveTo>moveFrom){
+    var f=clamp((now-moveFrom)/(moveTo-moveFrom),0,1);
+    playhead.style.left=(f*100)+'%';
+  }
+}
+function loop(){tick();if(rafActive)rafId=requestAnimationFrame(loop);}
+var tickerId=0;
+function setActive(v){
+  rafActive=v;
+  if(v){
+    cancelAnimationFrame(rafId);
+    rafId=requestAnimationFrame(loop);
+    if(!tickerId)tickerId=setInterval(tick,60);
+  }else{
+    if(tickerId){clearInterval(tickerId);tickerId=0;}
+    cancelAnimationFrame(rafId);
+  }
+}
+
+/* ---------- จับคู่การตบกับจังหวะที่คาดไว้ ---------- */
+function tagFor(ae,err){
+  if(ae<=0.035)return 'ตรงเป๊ะ';
+  return err>0?'ช้าไป':'เร็วไป';
+}
+function clsFor(p){return p>=100?'good':(p>=40?'warn':'bad');}
+function msText(errSec){
+  var s=Math.round(errSec*1000);
+  return (s>=0?'+':'−')+Math.abs(s)+' ms';
+}
+function finishRound(){
+  state='scored';
+  steps=[];rafActive=false;cancelAnimationFrame(rafId);
+  hideHead();stage.classList.remove('your-turn');
+  /* จับคู่แบบกินทีละคู่ที่ผิดพลาดน้อยสุด (หนึ่งตบต่อหนึ่งจังหวะ) */
+  var matched={},used={},cand=[];
+  tapsArr.forEach(function(tt,j){
+    expected.forEach(function(ot,i){
+      var e=tt-ot;
+      if(Math.abs(e)<=winSec)cand.push({i:i,j:j,e:e,ae:Math.abs(e)});
+    });
+  });
+  cand.sort(function(a,b){return a.ae-b.ae;});
+  cand.forEach(function(c){
+    if(!matched[c.i]&&used[c.j]===undefined){matched[c.i]=c;used[c.j]=true;}
+  });
+  var pts=expected.map(function(_,i){
+    if(!matched[i])return 0;
+    var ae=matched[i].ae;
+    var p=(ae<=0.035)?100:Math.round(100*(1-(ae-0.035)/(winSec-0.035)));
+    return clamp(Math.round(p),0,100);
+  });
+  var extras=tapsArr.filter(function(_,j){return used[j]===undefined;});
+  var sum=0;pts.forEach(function(p){sum+=p;});
+  var rs=clamp(Math.round(sum/pts.length)-extras.length*10,0,100);
+  roundScores.push(rs);
+  /* วาดตำแหน่งตบจริงบนห้อง */
+  var drawn=0;
+  pairsOf(matched).forEach(function(c){
+    var xf=clamp((tapsArr[c.j]-pSv)/barLen,0,1)*100;
+    var p=pts[c.i],cls=clsFor(p);
+    var dot=document.createElement('div');
+    dot.className='mk tap '+cls;
+    dot.style.left=xf+'%';
+    lane.appendChild(dot);
+    var conn=document.createElement('div');
+    conn.className='conn '+cls;
+    conn.style.left=xf+'%';
+    lane.appendChild(conn);
+    var signed=Math.round(c.e*1000);
+    errorsMs.push(signed);
+    var lab=document.createElement('div');
+    lab.className='tlabel r'+((drawn++%2)?'2':'1')+' '+cls;
+    lab.textContent=msText(c.e)+' '+tagFor(c.ae,c.e);
+    lab.style.left=xf+'%';
+    lane.appendChild(lab);
+  });
+  extras.forEach(function(tt){
+    var xf=clamp((tt-pSv)/barLen,0,1)*100;
+    var dot=document.createElement('div');
+    dot.className='mk tap bad';
+    dot.style.left=xf+'%';
+    lane.appendChild(dot);
+    var lab=document.createElement('div');
+    lab.className='tlabel r'+((drawn++%2)?'2':'1')+' bad';
+    lab.textContent='เกิน';
+    lab.style.left=xf+'%';
+    lane.appendChild(lab);
+  });
+  expected.forEach(function(ot,i){
+    if(matched[i])return;
+    var xf=(ot-pSv)/barLen*100;
+    var m=document.createElement('div');
+    m.className='mk miss';
+    m.textContent='×';
+    m.style.left=xf+'%';
+    lane.appendChild(m);
+    var lab=document.createElement('div');
+    lab.className='tlabel r1 bad';
+    lab.textContent='ขาด';
+    lab.style.left=xf+'%';
+    lane.appendChild(lab);
+  });
+  drawDots(matched,pts,extras);
+  $('resultTitle').textContent='ผลรอบนี้: '+rs+' คะแนน';
+  vis($('resultSec'),true);
+  refresh();
+}
+function pairsOf(matched){
+  var out=[];
+  expected.forEach(function(_,i){if(matched[i])out.push(matched[i]);});
+  return out;
+}
+function drawDots(matched,pts,extras){
+  var box=$('resultDots');
+  box.innerHTML='';
+  expected.forEach(function(_,i){
+    var li=document.createElement('span');
+    var dot=document.createElement('i');
+    dot.className='dot';
+    if(matched[i]){
+      var cls=clsFor(pts[i]);
+      dot.style.background='var(--'+cls+')';
+      li.appendChild(dot);
+      li.appendChild(document.createTextNode(msText(matched[i].e)+' '+tagFor(matched[i].ae,matched[i].e)));
+    }else{
+      dot.style.background='var(--bad)';
+      li.appendChild(dot);
+      li.appendChild(document.createTextNode('ขาด'));
+    }
+    box.appendChild(li);
+  });
+  (extras||[]).forEach(function(){
+    var li=document.createElement('span');
+    var dot=document.createElement('i');
+    dot.className='dot';
+    dot.style.background='var(--bad)';
+    li.appendChild(dot);
+    li.appendChild(document.createTextNode('เกิน'));
+    box.appendChild(li);
+  });
+}
+
+/* ---------- อินพุตการตบ ---------- */
+function onTap(ev){
+  if(state==='calib'){
+    var t=anchor.audio+(ev.timeStamp-anchor.perf)/1000;
+    calibTap(t);
+    toneNow(1100,'triangle',0.03,0.9);
+    return;
+  }
+  if(state!=='play')return;   /* แตะนอกเทิร์นของตัวเอง: ไม่ทำอะไร ไม่มีเสียง */
+  var tt=anchor.audio+(ev.timeStamp-anchor.perf)/1000-latMs/1000;
+  tapsArr.push(tt);
+  toneNow(1100,'triangle',0.03,0.9);   /* เสียงคำรามไม้เบา ๆ ตอบกลับ */
+}
+function toneNow(freq,type,dur,mul){if(ctx)tone(freq,type,ctx.currentTime,dur,mul);}
+$('pad').addEventListener('pointerdown',function(ev){ev.preventDefault();ensureAudio();onTap(ev);});
+document.addEventListener('keydown',function(ev){
+  if(ev.code!=='Space')return;
+  if(state==='play'||state==='calib'){
+    ev.preventDefault();
+    if(ev.repeat)return;
+    ensureAudio();
+    onTap(ev);
+  }
+});
+
+/* ---------- ฟังอีกครั้ง (หลังจบรอบเท่านั้น) ---------- */
+function replayPattern(){
+  if(state!=='scored')return;
+  state='replay';
+  refresh();
+  ensureAudio();
+  if(!ctx){state='scored';refresh();return;}
+  setStatus('ฟังให้ดี…');
+  markerEls.forEach(function(m){m.classList.remove('ghost');});
+  notes=[];steps=[];
+  var lS=ctx.currentTime+0.12;
+  pattern.forEach(function(b,i){
+    var t=lS+b*beatOf();
+    tone(880,'sine',t,0.07,1);
+    notes.push({t:t,el:markerEls[i],lit:false,dim:false});
+  });
+  steps=[
+    {t:lS,fn:function(){showHead(lS,lS+barLen);}},
+    {t:lS+barLen+0.06,fn:restoreScored}
+  ];
+  setActive(true);
+}
+function beatOf(){return 60/bpm;}
+function restoreScored(){
+  setActive(false);
+  steps=[];notes=[];
+  hideHead();
+  markerEls.forEach(function(m){m.classList.add('ghost');});
+  state='scored';
+  setStatus($('resultTitle').textContent);
+  refresh();
+}
+
+/* ---------- เริ่มเล่น · รอบถัดไป · จบเกม ---------- */
+function startGame(){
+  killScheduled();
+  steps=[];notes=[];rafActive=false;cancelAnimationFrame(rafId);
+  hideHead();stage.classList.remove('your-turn');
+  round=0;roundScores=[];errorsMs=[];lastPatternIdx=-1;
+  vis($('playArea'),true);vis($('overPanel'),false);
+  beginRound();
+}
+function showOver(){
+  state='gameOver';
+  var total=0;roundScores.forEach(function(s){total+=s;});
+  var key=levelName+'-'+bpm;
+  var best=storage.get('rhythm-tap-best-v1',{});
+  if(typeof best!=='object'||best===null)best={};
+  var prev=Number(best[key])||0;
+  if(total>prev){best[key]=total;prev=total;storage.set('rhythm-tap-best-v1',best);}
+  $('overTotal').textContent=String(total);
+  var comment;
+  if(total>=900)comment='แม่นมาก ใกล้เมโทรนอมแล้ว';
+  else if(total>=700)comment='ดีมาก ฟังและตบได้แม่น';
+  else if(total>=450)comment='ใช้ได้ ลองลดความเร็วแล้วฝึกต่อ';
+  else comment='ฝึกต่ออีกนิด เริ่มจากระดับง่ายก่อน';
+  $('overComment').textContent=comment;
+  $('overBest').textContent='คะแนนสูงสุด '+prev;
+  var avgTxt='ยังไม่มีการตบที่เข้าจังหวะ';
+  if(errorsMs.length){
+    var sum=0;errorsMs.forEach(function(e){sum+=e;});
+    var avg=sum/errorsMs.length;
+    var a=Math.abs(Math.round(avg));
+    avgTxt=(avg>0)?('โดยเฉลี่ยตบช้ากว่าจังหวะ '+a+' ms')
+          :(avg<0)?('โดยเฉลี่ยตบเร็วกว่าจังหวะ '+a+' ms')
+          :'โดยเฉลี่ยตบตรงจังหวะ';
+  }
+  $('overAvg').textContent=avgTxt;
+  vis($('resultSec'),false);
+  vis($('playArea'),false);vis($('overPanel'),true);
+  setRound('รอบ 10/10');
+  refresh();
+}
+/* ---------- กลับสู่หน้าเริ่ม (ใช้ตอนเริ่มใหม่ หรือแท็บถูกซ่อน) ---------- */
+function resetToIdle(stopMsg){
+  killScheduled();
+  steps=[];notes=[];rafActive=false;cancelAnimationFrame(rafId);
+  state='idle';
+  round=0;roundScores=[];errorsMs=[];lastPatternIdx=-1;
+  hideHead();stage.classList.remove('your-turn');
+  markerEls=[];
+  buildStage([]);
+  vis($('playArea'),true);vis($('overPanel'),false);vis($('resultSec'),false);
+  setRound('รอบ –/10');
+  setStatus(stopMsg?'หยุดชั่วคราว กดเริ่มเล่นเพื่อเริ่มใหม่':'กดเริ่มเล่น แล้วฟังจังหวะให้ดี');
+  refresh();
+}
+
+/* ---------- วัดความหน่วงอัตโนมัติ ---------- */
+function startCalib(){
+  if(state!=='idle')return;
+  state='calib';refresh();
+  ensureAudio();
+  if(!ctx){state='idle';refresh();return;}
+  var beat=0.75;   /* 80 BPM */
+  calib={clicks:[],used:{},errs:[],end:0};
+  var t0=ctx.currentTime+0.2;
+  anchor={audio:ctx.currentTime,perf:performance.now()};
+  for(var i=0;i<8;i++){
+    var t=t0+i*beat;
+    calib.clicks.push(t);
+    tone(440,'sine',t,0.04,0.8);
+  }
+  calib.end=t0+8*beat;
+  steps=[{t:calib.end+1.5,fn:finishCalibTimeout}];
+  setStatus('แตะตามเสียงคลิก (ครั้งที่ 1/8)');
+  setActive(true);
+}
+function calibTap(t){
+  var bi=-1,be=1e9;
+  calib.clicks.forEach(function(ct,i){
+    if(calib.used[i])return;
+    var e=Math.abs(t-ct);
+    if(e<be){be=e;bi=i;}
+  });
+  if(bi<0||be>0.4)return;
+  calib.used[bi]=true;
+  calib.errs.push((t-calib.clicks[bi])*1000);
+  if(calib.errs.length===8){finishCalib();}
+  else setStatus('แตะตามเสียงคลิก (ครั้งที่ '+(calib.errs.length+1)+'/8)');
+}
+function finishCalibTimeout(){
+  if(calib.errs.length>0){finishCalib();return;}
+  rafActive=false;steps=[];
+  state='idle';
+  setStatus('วัดไม่สำเร็จ ลองแตะตามคลิกอีกครั้ง');
+  refresh();
+}
+function finishCalib(){
+  rafActive=false;steps=[];
+  var s=calib.errs.slice().sort(function(a,b){return a-b;});
+  var median=(s.length%2===1)?s[(s.length-1)/2]:(s[s.length/2-1]+s[s.length/2])/2;
+  latMs=clamp(Math.round(median/10)*10,-200,200);
+  $('latInput').value=String(latMs);
+  $('latOut').textContent=latMs+' ms';
+  storage.set('rhythm-tap-latency-v1',latMs);
+  state='idle';
+  setStatus('ตั้งค่าชดเชยเป็น '+latMs+' ms');
+  refresh();
+}
+
+/* ---------- ปุ่มและตัวควบคุม: เปิด/ปิดตามสถานะ ---------- */
+function isActiveState(s){
+  return s==='countIn1'||s==='listen'||s==='countIn2'||s==='play'||s==='replay'||s==='calib';
+}
+function refresh(){
+  var lock=isActiveState(state);
+  $('segLevel').querySelectorAll('button').forEach(function(b){b.disabled=lock;});
+  $('segBpm').querySelectorAll('button').forEach(function(b){b.disabled=lock;});
+  var main=$('btnMain');
+  vis(main,state==='idle'||state==='scored');
+  if(state==='idle')main.textContent='เริ่มเล่น';
+  if(state==='scored')main.textContent=(round<10)?'รอบถัดไป':'ดูคะแนนรวม';
+  $('btnReplay').disabled=(state!=='scored');
+  $('btnRestart').disabled=(state==='idle');
+  $('btnCalib').disabled=(state!=='idle');
+  $('btnTest').disabled=lock;
+}
+
+/* ---------- เดินสายปุ่ม ---------- */
+$('btnMain').addEventListener('click',function(){
+  ensureAudio();
+  if(state==='idle')startGame();
+  else if(state==='scored'){if(round<10)beginRound();else showOver();}
+});
+$('btnAgain').addEventListener('click',function(){ensureAudio();startGame();});
+$('btnReplay').addEventListener('click',replayPattern);
+$('btnRestart').addEventListener('click',function(){resetToIdle(false);});
+$('btnTest').addEventListener('click',function(){ensureAudio();if(ctx)tone(880,'sine',ctx.currentTime,0.07,1);});
+$('btnCalib').addEventListener('click',startCalib);
+function wireSeg(segId,apply){
+  $(segId).addEventListener('click',function(ev){
+    var b=ev.target.closest('button');
+    if(!b||b.disabled)return;
+    $(segId).querySelectorAll('button').forEach(function(x){
+      x.setAttribute('aria-pressed',x===b?'true':'false');
+    });
+    apply(b);
+  });
+}
+wireSeg('segLevel',function(b){
+  levelName=b.getAttribute('data-level');
+  if(state!=='idle')resetToIdle(false);   /* เปลี่ยนระดับระหว่างเกม: เกมปัจจุบันล่ม */
+});
+wireSeg('segBpm',function(b){
+  bpm=Number(b.getAttribute('data-bpm'))||80;
+  if(state!=='idle')resetToIdle(false);
+});
+$('volInput').addEventListener('input',function(){
+  vol=Number(this.value)||0;
+  $('volOut').textContent=String(vol);
+  if(master)master.gain.value=(vol/100)*0.8;
+});
+$('latInput').addEventListener('input',function(){
+  latMs=Number(this.value)||0;
+  $('latOut').textContent=latMs+' ms';
+  storage.set('rhythm-tap-latency-v1',latMs);
+});
+/* ---------- แท็บถูกซ่อนหรือหน้าต่างเสียโฟกัส: ยกเลิกรอบอย่างปลอดภัย ---------- */
+function safeAbort(){
+  if(isActiveState(state))resetToIdle(true);
+}
+document.addEventListener('visibilitychange',function(){if(document.hidden)safeAbort();});
+window.addEventListener('blur',safeAbort);
+refresh();
+})();
+</script>
+</body>
+</html>
