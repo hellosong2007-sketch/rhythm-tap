@@ -214,6 +214,22 @@ header{margin-bottom:24px}h1{font-size:clamp(28px,7vw,38px);letter-spacing:-.8px
 .seg button[aria-pressed="true"]{background:var(--action);color:var(--action-ink);box-shadow:none}
 footer{font-size:12px;line-height:1.8}
 
+
+/* UI improvement 2: mobile controls and guidance */
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#btnMain{grid-column:1/-1;min-height:58px}
+.primary,.secondary,.seg button{min-height:48px}
+.secondary{padding:10px 14px}
+#pad{width:clamp(176px,50vw,220px);height:clamp(176px,50vw,220px);box-shadow:0 0 0 10px #8bf0b10a,0 12px 40px #0005;font-size:32px}
+.padzone{margin:28px 0 20px}
+.quick-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 20px}
+.quick-guide div{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 6px;text-align:center;font-size:12px}
+.quick-guide b{display:block;color:var(--action);font-size:18px}
+details.settings{border-radius:20px;padding:6px 16px 12px}
+.sound-help{color:var(--muted);font-size:13px;line-height:1.7;border-top:1px solid var(--line);padding-top:12px}
+.ai-note{display:block;margin-top:8px;color:var(--muted)}
+@media(max-width:380px){.app{padding-inline:14px}.controls{gap:12px}.segwrap{min-width:0;flex-basis:100%}.stage{padding:14px}.seg button{padding:6px}.actions{gap:8px}.secondary{font-size:14px;padding:10px 8px}}
+
 </style>
 </head>
 <body>
@@ -223,6 +239,7 @@ footer{font-size:12px;line-height:1.8}
     <div class="round" id="roundLbl">รอบ –/10</div>
   </header>
 
+  <div class="quick-guide" aria-label="วิธีเล่น"><div><b>01</b>ฟังต้นแบบ</div><div><b>02</b>นับจังหวะ</div><div><b>03</b>ตบกลับ</div></div>
   <section class="controls">
     <div class="segwrap grow">
       <div class="seg" id="segLevel" role="group" aria-label="ระดับความยาก">
@@ -301,10 +318,11 @@ footer{font-size:12px;line-height:1.8}
       <button type="button" class="secondary" id="btnCalib">วัดความหน่วงให้อัตโนมัติ</button>
       <button type="button" class="secondary" id="btnTest">ทดสอบเสียง</button>
     </div>
+    <p class="sound-help">ไม่ได้ยินเสียง? ลองกด “ทดสอบเสียง” เพิ่มระดับเสียงเครื่อง และตรวจโหมดเงียบก่อนเริ่มเกม</p>
   </details>
 
   <footer>
-    เกมตบจังหวะ · สร้างด้วย AI ช่วย · วิชา 3500230
+    เกมตบจังหวะ · สร้างด้วย AI ช่วย · วิชา 3500230<span class="ai-note">ปรับ UI/UX ด้วย ChatGPT: ธีมสีและตัวอักษร · ปุ่มและการจัดวางบนมือถือ<br>คงสคริปต์เกมต้นฉบับ</span>
     <div id="storageNote">เบราว์เซอร์นี้เก็บคะแนนสูงสุดไม่ได้ เกมยังเล่นได้ตามปกติ</div>
   </footer>
 </main>
