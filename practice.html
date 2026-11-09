@@ -1,0 +1,1597 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Studio · บันทึกการซ้อม</title>
+<meta name="description" content="จับเวลาซ้อม หยุดแล้วบันทึกว่าซ้อมอะไร แล้วดูกราฟ 7 วันล่าสุดเทียบเป้าหมายรายวัน">
+<meta name="theme-color" content="#dfe9ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1a21" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%23dfe9ef'/%3E%3Cpath%20d='M12%2024V8l9-2.5v5.3l-6%201.7V24a4%204%201%201%201-3-3.9z'%20fill='%233f6f8d'/%3E%3C/svg%3E">
+<meta property="og:title" content="บันทึกการซ้อม">
+<meta property="og:description" content="จับเวลาซ้อม หยุดแล้วบันทึกว่าซ้อมอะไร แล้วดูกราฟ 7 วันล่าสุดเทียบเป้าหมายรายวัน">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="th_TH">
+<style>
+/* ---------- โทเคนสี (ธีมสว่าง) ---------- */
+:root{
+  --bg:#dfe9ef; --surface:#ffffff; --surface-2:#f3f8fa;
+  --line:#c6d6e0; --line-strong:#b5c8d4;
+  --text:#17252f; --text-soft:#33454f; --muted:#5f7584;
+  --action:#c4421f; --action-ink:#ffffff; --action-soft:#fdece7;
+  --blue:#3f6f8d; --blue-soft:#e3eef5;
+  --brass:#9a6a1f;
+  --good:#2e7d59; --warn:#9a6a1f; --bad:#b3261e;
+}
+/* ---------- โทเคนสี (ธีมมืด) ---------- */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0f1a21; --surface:#172630; --surface-2:#1c2f3b;
+    --line:#2c4150; --line-strong:#3a5263;
+    --text:#e6eef3; --text-soft:#c3d3dc; --muted:#8ea3b1;
+    --action:#f07a5a; --action-ink:#1b0e09; --action-soft:#3a221b;
+    --blue:#8cb8d3; --blue-soft:#1d3442;
+    --brass:#d9a94f;
+    --good:#7fd1a6; --warn:#e3b04b; --bad:#ff8a80;
+  }
+}
+/* ---------- พื้นฐาน ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:"Sarabun","Leelawadee UI","Noto Sans Thai",Thonburi,Tahoma,system-ui,sans-serif;
+  font-size:16px;line-height:1.6;overflow-x:hidden;
+}
+button,input,textarea{font-family:inherit}
+button{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+input,textarea{touch-action:manipulation}
+button:active{transform:scale(.98)}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.hidden{display:none!important}
+.sr-only{
+  position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+/* ---------- โครงหน้า ---------- */
+.app{
+  max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;
+  padding-top:16px;padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  padding-left:max(16px,env(safe-area-inset-left));
+  padding-right:max(16px,env(safe-area-inset-right));
+}
+header{display:block}
+h1{
+  font-size:28px;line-height:1.4;font-weight:700;margin:0;
+  text-wrap:balance;
+}
+h2{text-wrap:balance}
+.staff{
+  height:21px;
+  background:repeating-linear-gradient(to bottom,var(--line-strong) 0 1px,transparent 1px 5px);
+}
+header .staff{margin-top:10px}
+.storage-note{
+  margin:10px 0 0;padding:10px 12px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface-2);color:var(--text-soft);
+  font-size:14.4px;font-weight:600;line-height:1.5;
+}
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:18px;padding:16px;min-width:0;
+}
+.card > .staff{margin:-16px -16px 14px;border-radius:18px 18px 0 0}
+.card h2{font-size:18px;line-height:1.5;font-weight:700;margin:0}
+/* ---------- ปุ่ม ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;min-width:44px;padding:8px 14px;
+  border:1px solid transparent;border-radius:12px;
+  font-size:16px;font-weight:700;line-height:1.35;
+  cursor:pointer;transition:transform .12s;
+}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:disabled:active{transform:none}
+.primary{background:var(--action);color:var(--action-ink);border-color:var(--action)}
+.secondary{background:var(--surface-2);color:var(--text);border-color:var(--line);font-weight:600}
+.btn-lg{min-height:56px;font-size:18px}
+.btn-block{width:100%}
+.btn.is-armed{border-color:var(--bad);color:var(--bad);background:var(--surface-2)}
+/* ---------- การ์ดจับเวลา ---------- */
+.timer-card{padding:24px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.clock{
+  font-size:64px;line-height:1.15;font-weight:700;text-align:center;
+  font-variant-numeric:tabular-nums;color:var(--text);
+  white-space:nowrap;
+}
+.timer-status{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  margin:0;min-height:22px;font-size:14.4px;line-height:1.5;color:var(--muted);
+}
+.run-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--action);
+  flex:0 0 auto;display:none;
+}
+.timer-card.is-running .run-dot{display:inline-block}
+.timer-actions{display:flex;gap:12px;margin-top:6px}
+.timer-actions .btn{flex:1 1 0;min-width:0;min-height:56px;font-size:18px}
+.restore{
+  display:flex;flex-direction:column;gap:8px;padding:12px;
+  border:1px solid var(--line);border-radius:12px;background:var(--blue-soft);
+}
+.restore p{margin:0;font-size:14.4px;line-height:1.5;color:var(--text);font-weight:600}
+.restore .restore-warn{color:var(--bad)}
+.restore-actions{display:flex;gap:8px;flex-wrap:wrap}
+.restore-actions .btn{flex:1 1 160px;min-height:52px;font-size:16px}
+/* ---------- แผ่นบันทึก ---------- */
+.sheet h2{font-size:22px;line-height:1.5;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{
+  min-height:44px;max-width:100%;padding:8px 14px;
+  border:1px solid var(--line);border-radius:999px;
+  background:var(--surface-2);color:var(--text);
+  font-size:14.4px;font-weight:600;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;touch-action:manipulation;
+}
+.field-label{
+  display:block;margin:12px 0 4px;font-size:14.4px;line-height:1.5;
+  font-weight:600;color:var(--text-soft);
+}
+input[type="text"],textarea,input[type="number"]{
+  width:100%;min-height:44px;padding:10px 12px;
+  border:1px solid var(--line);border-radius:12px;
+  background:var(--surface-2);color:var(--text);
+  font-size:16px;line-height:1.5;
+}
+textarea{min-height:64px;resize:vertical}
+input[type="number"]{appearance:textfield;-moz-appearance:textfield}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button{appearance:none;margin:0}
+.hint{margin:6px 0 0;min-height:20px;font-size:12.8px;line-height:1.5;color:var(--muted)}
+.short-warn{margin:10px 0 0;font-size:14.4px;line-height:1.5;font-weight:600;color:var(--warn)}
+.sheet-actions{display:flex;gap:12px;margin-top:14px}
+.sheet-actions .btn{flex:1 1 0;min-width:0;min-height:52px;padding:8px 10px}
+.sheet-actions .primary{flex:1.3 1 0}
+/* ---------- กราฟสัปดาห์ ---------- */
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.today-prog{
+  margin:0;font-size:14.4px;line-height:1.5;font-weight:700;
+  color:var(--text-soft);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.progress{
+  height:6px;margin:8px 0 2px;border-radius:999px;
+  background:var(--surface-2);overflow:hidden;
+}
+.progress-fill{display:block;height:100%;width:0;border-radius:999px;background:var(--action)}
+.progress-fill.met{background:var(--good)}
+.chart{margin-top:10px;position:relative}
+.plot{position:relative;height:156px}
+.chart-cols{position:absolute;inset:0;display:flex;gap:6px;align-items:flex-end;z-index:1}
+.col{flex:1 1 0;min-width:0;height:100%;position:relative}
+.bar{
+  position:absolute;left:50%;bottom:0;width:min(26px,64%);transform:translateX(-50%);
+  background:var(--blue);border-radius:4px 4px 0 0;height:0;
+  transition:height .2s;
+}
+.bar.is-today{background:var(--action)}
+.bar-dot{
+  position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2.5px;
+  border-radius:50%;background:var(--line-strong);
+}
+.bar-dot.is-today{background:var(--action)}
+.col-val{
+  position:absolute;left:-8px;right:-8px;text-align:center;
+  font-size:12.8px;line-height:1.3;font-weight:600;color:var(--muted);
+  font-variant-numeric:tabular-nums;z-index:3;
+}
+.col-chk{
+  position:absolute;left:0;right:0;text-align:center;
+  font-size:12.8px;line-height:1.3;font-weight:700;color:var(--good);z-index:3;
+}
+.goal-line{
+  position:absolute;left:0;right:0;height:0;
+  border-top:1px dashed var(--line-strong);z-index:2;
+}
+.goal-label{
+  position:absolute;right:0;z-index:4;
+  padding:0 0 0 6px;background:var(--surface);
+  font-size:12.8px;line-height:1.4;font-weight:600;color:var(--muted);
+  white-space:nowrap;
+}
+.dows{display:flex;gap:6px;margin-top:6px}
+.dow{
+  flex:1 1 0;min-width:0;text-align:center;
+  font-size:12.8px;line-height:1.5;font-weight:600;color:var(--muted);
+}
+.dow.is-today{color:var(--text);font-weight:700}
+.week-summary{
+  margin:10px 0 0;font-size:14.4px;line-height:1.5;font-weight:600;
+  color:var(--text-soft);
+}
+/* ---------- รายการบันทึก ---------- */
+.empty{margin:12px 0 0;font-size:16px;line-height:1.6;color:var(--text-soft)}
+.log-day{
+  margin:14px 0 2px;font-size:14.4px;line-height:1.5;
+  font-weight:700;color:var(--text-soft);
+}
+#logList > .log-day:first-child{margin-top:12px}
+.entry{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:10px 0;border-bottom:1px solid var(--line);
+}
+.entries:last-child .entry:last-child{border-bottom:0;padding-bottom:2px}
+.entry-main{flex:1 1 auto;min-width:0}
+.entry-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.entry-dur{
+  font-size:16px;line-height:1.5;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.entry-label{font-size:16px;line-height:1.5;overflow-wrap:anywhere;min-width:0}
+.entry-time{
+  font-size:12.8px;line-height:1.5;color:var(--muted);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.entry-note{
+  margin:2px 0 0;font-size:14.4px;line-height:1.5;
+  color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap;
+}
+.del{
+  flex:0 0 auto;min-height:44px;min-width:44px;padding:6px 10px;
+  font-size:14.4px;font-weight:600;
+}
+/* ---------- ตั้งค่าและข้อมูล ---------- */
+details.settings{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:18px;padding:0;
+}
+summary{
+  list-style:none;cursor:pointer;min-height:56px;
+  display:flex;align-items:center;gap:8px;
+  padding:4px 16px;font-size:18px;font-weight:700;
+  touch-action:manipulation;
+}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"▾";margin-left:auto;color:var(--muted);font-size:14.4px}
+details[open] summary::after{content:"▴"}
+.settings-body{padding:4px 16px 16px;border-top:1px solid var(--line)}
+.setblock{padding:12px 0;border-top:1px solid var(--line)}
+.setblock:first-child{border-top:0;padding-top:4px}
+.setblock:last-of-type{border-top:0}
+.setlabel{display:block;margin:0 0 8px;font-size:16px;line-height:1.5;font-weight:600}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper input{width:104px;min-height:48px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.stepper .btn{width:48px;min-width:48px;min-height:48px;padding:0;font-size:22px;font-weight:700}
+.switchrow{
+  display:flex;align-items:center;gap:12px;min-height:48px;
+  cursor:pointer;font-size:16px;font-weight:600;line-height:1.5;
+}
+.switchwrap{position:relative;flex:0 0 auto;width:52px;height:44px}
+.switchwrap input{
+  position:absolute;inset:0;width:100%;height:100%;margin:0;
+  opacity:0;cursor:pointer;z-index:2;
+}
+.track{
+  position:absolute;left:0;top:6px;width:52px;height:32px;
+  border-radius:999px;background:var(--line);
+  transition:background-color .2s;
+}
+.thumb{
+  position:absolute;left:4px;top:10px;width:24px;height:24px;
+  border-radius:50%;background:var(--surface);
+  transition:transform .2s;
+}
+.switchwrap input:checked ~ .track{background:var(--blue)}
+.switchwrap input:checked ~ .thumb{transform:translateX(20px)}
+.switchwrap input:focus-visible ~ .track{outline:3px solid var(--blue);outline-offset:2px}
+.switchtext{flex:1 1 auto;min-width:0}
+.setbtns{display:flex;flex-direction:column;gap:8px}
+.setbtns .btn{width:100%;min-height:48px;font-size:16px}
+.copy-fallback{margin-top:8px}
+.copy-fallback textarea{
+  font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  font-size:12.8px;line-height:1.6;
+}
+.setnote{margin:8px 0 0;font-size:14.4px;line-height:1.5;color:var(--text-soft);min-height:0}
+.importarea{
+  font-family:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  font-size:12.8px;line-height:1.6;min-height:84px;
+}
+.privacy{
+  margin:8px 0 0;padding-top:12px;border-top:1px solid var(--line);
+  font-size:12.8px;line-height:1.7;color:var(--muted);
+}
+/* ---------- ประกาศลอยและท้ายหน้า ---------- */
+.toast{
+  position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
+  transform:translate(-50%,10px);z-index:20;
+  max-width:calc(100vw - 32px);padding:10px 18px;border-radius:999px;
+  background:var(--text);color:var(--surface);
+  font-size:14.4px;line-height:1.5;font-weight:700;text-align:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+footer{margin:2px 0 0;text-align:center;font-size:14.4px;line-height:1.6;color:var(--text-soft)}
+footer p{margin:0}
+/* ---------- จอแคบ ---------- */
+@media (max-width:380px){
+  .chart-cols,.dows{gap:3px}
+  .sheet-actions{flex-direction:column}
+  .sheet-actions .primary{flex:1 1 auto}
+  .timer-actions .btn{font-size:16px;padding:8px 8px}
+}
+@media (max-width:340px){
+  .clock{font-size:56px}
+}
+/* ---------- จอกว้าง: กราฟกับบันทึกวางคู่กัน ---------- */
+@media (min-width:721px){
+  .app{
+    max-width:900px;display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;align-items:start;
+  }
+  header,.timer-card,.sheet,details.settings,footer{grid-column:1 / -1}
+  .week-card{grid-column:1}
+  .log-card{grid-column:2}
+}
+/* ---------- ลดการเคลื่อนไหว ---------- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+
+/* UI redesign: Piano Studio — local assets only */
+:root, :root:not([data-theme="light"]){color-scheme:light;--bg:#f4f2ed;--surface:#fffefa;--surface-2:#f0eee7;--line:#dddcd2;--line-strong:#c8c7b8;--text:#202f2b;--text-soft:#42544c;--muted:#64756c;--action:#285c48;--action-ink:#ffffff;--action-soft:#e3eee7;--blue:#8a9f80;--blue-soft:#edf1e8;--brass:#987638;--good:#285c48;--warn:#86621f;--bad:#a33429}
+body{background:radial-gradient(ellipse at top right,#e2e9db,transparent 55%),var(--bg)}
+.app{gap:20px;padding-top:28px}
+header{padding:10px 2px 6px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px;font-size:12px;letter-spacing:.16em;font-weight:700;color:var(--action)}
+.brand-mark{background:var(--action);color:white;border-radius:12px;width:38px;height:38px;display:inline-grid;place-items:center;font-size:23px;letter-spacing:0;margin-right:10px;vertical-align:middle}
+.brand-tag{letter-spacing:0;font-size:12px;border:1px solid var(--line);padding:6px 10px;border-radius:99px}
+h1{font-size:clamp(28px,5vw,40px);letter-spacing:-.03em}
+.intro{margin:8px 0;color:var(--muted);font-size:15px}
+header>.staff{display:none}
+.card,details.settings{border-radius:24px;box-shadow:0 5px 24px #20372b05}
+.timer-card{padding:26px 20px 24px;gap:14px;background:var(--action);border-color:var(--action);color:white;position:relative;overflow:hidden}
+.timer-label{text-align:center;margin:0;color:#d0e0d1;font-size:13px;letter-spacing:.13em}
+.clock{color:#fffefa;font-size:clamp(52px,12vw,88px);letter-spacing:-.04em;padding:12px 0;font-weight:600}
+.timer-status{color:#d0e0d1}
+.timer-card .primary{background:#eee5c8;border-color:#eee5c8;color:#223c30}
+.timer-card .secondary{background:#ffffff12;border-color:#ffffff55;color:white}
+.timer-card .restore{background:var(--surface)}
+.timer-card .run-dot{background:#eee5c8}
+.timer-actions{max-width:560px;width:100%;margin:8px auto 0;flex-wrap:wrap}
+.timer-actions .btn{min-height:58px;border-radius:16px}
+.card:not(.timer-card){padding:22px}
+.card>.staff{margin:-22px -22px 20px;border-radius:24px 24px 0 0;opacity:.45}
+.progress{height:8px;margin-top:14px}
+.bar{border-radius:8px 8px 0 0;width:min(30px,64%)}
+.week-summary{padding:12px;border-radius:12px;background:var(--blue-soft)}
+.empty{padding:26px 12px;text-align:center;border:1px dashed var(--line-strong);border-radius:16px;font-size:15px}
+input[type=text],textarea,input[type=number]{background:var(--surface);border-color:var(--line-strong)}
+.sheet{border:2px solid var(--action);scroll-margin-top:16px}
+.btn:focus-visible,.chip:focus-visible{outline:3px solid var(--brass);outline-offset:4px}
+.btn,.chip{min-height:48px}
+summary{min-height:64px;padding:10px 22px}
+footer{font-size:12px;color:var(--muted);padding:8px 0}
+@media(min-width:721px){.app{max-width:1040px;gap:22px}.timer-card{padding:32px}.clock{font-size:88px}.week-card,.log-card{min-height:330px}}
+@media(max-width:380px){.brand-tag{display:none}.card:not(.timer-card){padding:18px}.card>.staff{margin:-18px -18px 18px}.timer-card{padding:24px 14px}.timer-actions .btn{flex-basis:120px}.today-prog{font-size:13px}}
+
+
+/* Premium edition — presentation only; original script preserved */
+:root,:root:not([data-theme="light"]){color-scheme:dark;--bg:#121413;--surface:#1c201d;--surface-2:#242923;--line:#343b32;--line-strong:#535b4b;--text:#f4f0e4;--text-soft:#d4d5c8;--muted:#aeb4a5;--action:#dbbe82;--action-ink:#191d17;--action-soft:#363426;--blue:#c7ae76;--blue-soft:#292d23;--brass:#e5ca8e;--good:#b5c99a;--warn:#edc777;--bad:#f3a59a}
+body{background:radial-gradient(ellipse at 85% 0,#3a40302e,transparent 48%),#121413}
+.app{max-width:1160px;padding-top:32px;gap:24px}
+.brand{color:#dbc28d;letter-spacing:.22em;margin-bottom:42px;padding-bottom:22px;border-bottom:1px solid #343b32}
+.brand-mark{background:#dbbe82;color:#191d17;border-radius:50%;width:42px;height:42px}
+.brand-tag{font-size:10px;letter-spacing:.16em;border:0;color:#aeb4a5}
+h1{font-size:clamp(32px,5vw,54px);font-weight:500;line-height:1.3;letter-spacing:-.04em}
+.intro{margin-top:15px;max-width:550px;line-height:1.9}
+header{padding-bottom:14px}
+.card,details.settings{border-radius:22px;box-shadow:none;border-color:#343b32}
+.timer-card{background:radial-gradient(ellipse at 50% 10%,#333b2e 0, #22291f 50%,#1b211a 100%);border:1px solid #5a6247;padding:30px 24px 26px;isolation:isolate}
+.timer-card::before{content:"";position:absolute;width:360px;height:360px;border:1px solid #bba66a30;border-radius:50%;left:50%;top:48%;transform:translate(-50%,-50%);box-shadow:0 0 0 18px #c8b17607,0 0 0 19px #bba66a15,0 0 0 42px #c8b17605;z-index:-1;pointer-events:none}
+.session-kicker{text-align:center;color:#e4c98e;font-size:10px;letter-spacing:.28em;margin:0 0 22px}
+.timer-label{font-size:14px;color:#bec7b1;letter-spacing:0}
+.clock{font-family:Georgia,'Times New Roman',serif;font-size:clamp(72px,14vw,108px);font-weight:400;color:#f5edda;letter-spacing:-.045em;padding:8px 0}
+.timer-status{color:#c0c7b7}.timer-actions{margin-top:30px;max-width:440px}
+.timer-card .primary{background:linear-gradient(115deg,#eddaa9,#c6a465);border-color:#dfc28a;color:#20241b;box-shadow:0 6px 24px #0003}
+.timer-card .secondary{background:#252d23;border-color:#69755b;color:#f4f0e4}
+.timer-card .restore{background:#1c201d}.timer-card .restore .primary{color:#20241b}
+.btn{border-radius:12px;transition:background .2s,transform .15s}.btn:hover:not(:disabled){filter:brightness(1.09)}
+.card>.staff{display:none}.card h2{font-size:19px;font-weight:600}.card-head{align-items:start}.today-prog{color:#dbbe82}
+.week-card h2::before{content:"02 / PROGRESS";display:block;font-size:10px;letter-spacing:.2em;color:#c5ac78;margin-bottom:14px}
+.log-card h2::before{content:"03 / YOUR JOURNAL";display:block;font-size:10px;letter-spacing:.2em;color:#c5ac78;margin-bottom:14px}
+.progress{height:5px;background:#343b32}.progress-fill{background:#d9be84}.week-summary{background:#282e24;color:#d6dbc9;border:1px solid #394131;font-size:13px}
+.empty{background:#20251e;border:1px dashed #4f5944;line-height:1.9;color:#b9c1af;padding:32px 18px}
+.bar{background:linear-gradient(to top,#80734e,#ddc78e);border-radius:5px 5px 0 0}
+.sheet{border-color:#c5ac78}input[type=text],textarea,input[type=number]{background:#151a14;color:#f4f0e4}input::placeholder,textarea::placeholder{color:#9ca692}
+summary{font-weight:500}.settings{background:#191e18}footer{padding:12px 0 22px;color:#aeb4a5;font-size:11px}
+@media(min-width:900px){.app{grid-template-columns:1.08fr 1fr;gap:24px}header{grid-column:1/-1}.timer-card{grid-column:1;grid-row:2/4;min-height:610px;justify-content:center}.week-card{grid-column:2;grid-row:2;min-height:0}.log-card{grid-column:2;grid-row:3;min-height:210px}.sheet{grid-column:1/-1}.timer-card:has(+.sheet:not(.hidden)){grid-row:2}.app:has(.sheet:not(.hidden)) .week-card,.app:has(.sheet:not(.hidden)) .log-card{grid-row:auto}}
+@media(max-width:899px){.timer-card{min-height:390px}.brand{margin-bottom:28px}.app{gap:18px}}
+@media(max-width:380px){.brand{font-size:10px;letter-spacing:.14em}.timer-card::before{width:280px;height:280px}.timer-card{min-height:370px}.timer-actions{margin-top:24px}.card-head{flex-wrap:wrap;gap:8px}}
+
+
+:root,:root:not([data-theme="light"]){--bg:#0b0d0c;--surface:#171a18;--surface-2:#212622;--line:#303932;--line-strong:#526255;--text:#f3f7f4;--text-soft:#d0d9d2;--muted:#a1b0a5;--action:#00ee91;--action-ink:#062518;--blue:#00bd77;--blue-soft:#123026;--brass:#00ee91;--good:#00ee91;--warn:#f2cc76;--bad:#ffa7a0}
+body{background:radial-gradient(ellipse at 80% 0,#00ee910b,transparent 50%),#0b0d0c}.brand{color:var(--action)}.brand-mark{background:var(--action)}.brand-tag{color:var(--muted)}.timer-card{background:radial-gradient(ellipse at 50% 30%,#20382a,#141b16 70%);border-color:#365c43}.timer-card::before{border-color:#00ee9133;box-shadow:0 0 0 18px #00ee9106,0 0 0 19px #00ee9114}.session-kicker{color:var(--action)}.clock{font-family:system-ui,sans-serif;font-weight:500;color:#f3fff7}.timer-card .primary{background:var(--action);border-color:var(--action);color:var(--action-ink)}.timer-card .secondary{background:#253329}.card,details.settings{border-color:var(--line);background-color:var(--surface)}.bar{background:var(--blue)}.week-summary,.empty{background:#1c2720;border-color:#354a3c}.today-prog,.week-card h2::before,.log-card h2::before{color:var(--action)}.progress-fill{background:var(--action)}input[type=text],textarea,input[type=number],input[type=date],input[type=time]{background:#101612;color:var(--text);border:1px solid var(--line-strong);border-radius:12px;padding:12px;font:inherit;min-height:48px;max-width:100%;min-width:0;color-scheme:dark}.brand{margin-bottom:24px}.app{max-width:1080px}.planner{grid-column:1/-1}.planner-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:16px}.planner-head h2{margin:0}.planner-head button{background:var(--surface-2);color:var(--text)}.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;text-align:center}.cal-day{border:1px solid transparent;background:transparent;color:var(--text);border-radius:50%;aspect-ratio:1;min-height:40px;cursor:pointer;font:inherit;position:relative}.cal-day.planned{background:var(--action);color:#052719;font-weight:700}.cal-day.selected{outline:2px solid var(--action);outline-offset:2px}.cal-day.today:not(.planned){border-color:var(--line-strong)}.cal-day.recorded:after{content:'';position:absolute;bottom:4px;left:calc(50% - 2px);width:4px;height:4px;background:currentColor;border-radius:50%}.cal-dow{color:var(--muted);font-size:12px;padding:6px 0}.planner-body{display:grid;grid-template-columns:1fr 1fr;gap:30px}.schedule-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}.schedule-form label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px}.schedule-form .wide{grid-column:1/-1}.schedule-form button{grid-column:1/-1}.schedule-item{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}.schedule-item>div{flex:1;min-width:0;overflow-wrap:anywhere}.schedule-item strong{display:block}.schedule-item small{color:var(--muted)}.schedule-item time{color:var(--action);font-size:14px}.metric-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}.metric{background:var(--surface-2);border-radius:14px;padding:14px 10px}.metric b{display:block;font-size:24px;font-weight:600;color:var(--action)}.metric span{font-size:12px;color:var(--muted)}.planner-help{font-size:12px;color:var(--muted);margin:8px 0 14px}#plannerMsg{color:var(--action);font-size:13px;min-height:22px}#selectedHeading{font-size:16px;margin:0 0 12px}.planner .primary{background:var(--action);color:var(--action-ink)}.planner label input{width:100%}
+@media(min-width:900px){.timer-card{grid-column:1;grid-row:auto;min-height:420px}.week-card{grid-column:2;grid-row:auto}.log-card{grid-column:1/-1;grid-row:auto;min-height:0}.app:has(.sheet:not(.hidden)) .week-card{grid-row:auto}}
+@media(max-width:640px){.planner-body{grid-template-columns:1fr;gap:24px}.calendar-grid{gap:5px}.cal-day{min-height:34px}.metric{padding:12px 8px}.metric b{font-size:21px}.brand-tag{display:none}.planner-head h2{font-size:17px}}
+
+[hidden]{display:none!important}.app-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:26px;flex-wrap:wrap}.app-toolbar nav{display:flex;gap:8px;flex-wrap:wrap}.language-label{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}select{font:inherit;color:var(--text);background:var(--surface-2);border:1px solid var(--line-strong);padding:10px 12px;border-radius:12px;min-height:48px}body[data-page="summary"] .app>section:not(#summaryPage),body[data-page="summary"] .app>details{display:none!important}#summaryPage{grid-column:1/-1;min-width:0}.report-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}.report-heading .session-kicker{text-align:left;margin:0 0 8px}.report-tabs{display:flex;gap:6px}.report-tabs [aria-pressed="true"]{background:var(--action);color:var(--action-ink)}.report-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:24px 0}.report-controls input{font:inherit;color:var(--text);background:var(--surface-2);border:1px solid var(--line-strong);padding:10px;border-radius:12px;min-width:0;color-scheme:dark;max-width:100%}.report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.report-metrics .metric{padding:20px}.report-metrics b{font-size:32px}.report-metrics span{font-size:13px}.report-chart{display:flex;align-items:stretch;gap:5px;height:210px;margin:25px 0 14px;padding-top:25px;border-bottom:1px solid var(--line)}.report-column{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:flex-end;align-items:center;gap:8px}.report-bar{width:75%;max-width:36px;min-height:2px;background:linear-gradient(#00ee91,#147c51);border-radius:5px 5px 0 0}.report-column small{color:var(--muted);font-size:10px;height:18px;white-space:nowrap}.table-wrap{overflow-x:auto}.report-table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}.report-table th{color:var(--muted);font-size:12px;font-weight:500}.report-table td,.report-table th{padding:13px 10px;border-bottom:1px solid var(--line)}.report-table td:nth-child(2){color:var(--action);font-variant-numeric:tabular-nums}.report-table td:not(:first-child),.report-table th:not(:first-child){text-align:right}#reportPlans .schedule-item{flex-wrap:wrap}#reportPlans .schedule-item small{display:block}#summaryPage h3{font-size:17px;margin-top:28px}.report-metrics .metric{min-width:0}.language-label select{max-width:125px}body[data-page="summary"] #navSummary{background:var(--action);color:var(--action-ink)}body[data-page="summary"] #navPractice{background:var(--surface-2);border-color:var(--line);color:var(--text)}
+@media(max-width:600px){.report-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.report-metrics .metric{padding:16px 12px}.report-metrics b{font-size:27px}.report-chart{gap:2px;height:180px}.report-column small{font-size:9px}.report-controls{gap:8px}.report-table th,.report-table td{padding:12px 5px;font-size:12px}.app-toolbar nav .btn{font-size:14px;padding:9px 12px}}
+</style>
+</head>
+<body><nav aria-label="หน้าหลัก" style="display:flex;gap:10px;justify-content:center;padding:16px;flex-wrap:wrap"><a href="practice.html" style="padding:12px 20px;background:#8bf0b1;color:#092418;border-radius:14px;text-decoration:none;font-weight:700">📅 แผนซ้อมและสถิติ</a><a href="index.html" style="padding:12px 20px;background:#173529;color:#f0fff5;border:1px solid #476d58;border-radius:14px;text-decoration:none;font-weight:700">🥁 เกมตบจังหวะ</a></nav>
+<main class="app">
+  <header>
+    <div class="brand"><span><span class="brand-mark" aria-hidden="true">♬</span>PIANO STUDIO</span><span class="brand-tag">PLAN · PRACTICE · PROGRESS</span></div><h1>ซ้อมวันนี้ เก่งขึ้นทุกวัน</h1><p class="intro">พื้นที่ส่วนตัวสำหรับโฟกัสกับเสียงดนตรี และเติบโตทีละวัน</p>
+    <div class="staff" aria-hidden="true"></div>
+    <p class="storage-note hidden" id="storageNote" role="note">เบราว์เซอร์นี้เก็บบันทึกไม่ได้ ข้อมูลจะหายเมื่อปิดหน้านี้</p>
+  <div class="app-toolbar"><nav aria-label="หน้าหลัก"><button type="button" class="btn primary" id="navPractice" aria-current="page">ซ้อมและวางแผน</button><button type="button" class="btn secondary" id="navSummary">สรุปและสถิติ</button></nav><label class="language-label"><span>ภาษา</span><select id="appLanguage" aria-label="ภาษา"><option value="th">ไทย</option><option value="en">English</option><option value="zh">中文</option></select></label></div></header>
+
+<section class="card planner" aria-label="ปฏิทินและตารางซ้อม"><div class="planner-head"><button class="btn" id="prevMonth" type="button" aria-label="เดือนก่อน">‹</button><h2 id="monthTitle"></h2><button class="btn" id="nextMonth" type="button" aria-label="เดือนถัดไป">›</button></div><div class="planner-body"><div><div class="calendar-grid" id="calendarGrid"></div><p class="planner-help">วงเขียว = มีแผนซ้อม · จุดใต้วัน = มีบันทึกซ้อมจริง</p><div class="metric-row"><div class="metric"><b id="plannedTotal">0</b><span>นาทีที่วางแผน</span></div><div class="metric"><b id="actualTotal">0</b><span>นาทีที่ซ้อมจริง</span></div><div class="metric"><b id="sessionTotal">0</b><span>รอบที่ซ้อมจริง</span></div></div><p class="planner-help">สรุปเฉพาะวันที่เลือก ข้อมูลซ้อมจริงมาจากตัวจับเวลา</p></div><div><h3 id="selectedHeading"></h3><div id="scheduleList"></div><form class="schedule-form" id="scheduleForm"><label class="wide">วันที่ซ้อม<input id="planDate" type="date" required></label><label>เริ่ม<input id="planStart" type="time" value="16:00" required></label><label>สิ้นสุด<input id="planEnd" type="time" value="17:00" required></label><label class="wide">เพลง / สิ่งที่ต้องการฝึก<input id="planLabel" type="text" maxlength="60" placeholder="เช่น Chopin · มือซ้าย ห้อง 1–8" required></label><button class="btn primary" type="submit">＋ เพิ่มเวลาซ้อม</button></form><p id="plannerMsg" role="status" aria-live="polite"></p></div></div></section>
+  <!-- การ์ดจับเวลา: ตัวเลขคือพระเอกของการ์ด -->
+  <section class="card timer-card" id="timerCard" aria-label="ตัวจับเวลา">
+    <div class="restore hidden" id="restoreNote">
+      <p id="restoreText" aria-live="polite"></p>
+      <p class="restore-warn hidden" id="restoreCap">เวลานานผิดปกติ ตัดที่ 12 ชั่วโมง</p>
+      <div class="restore-actions">
+        <button type="button" class="btn secondary" id="btnRestoreKeep">ซ้อมต่อจากเดิม</button>
+        <button type="button" class="btn primary" id="btnRestoreStop">หยุดและบันทึกตอนนี้</button>
+      </div>
+    </div>
+    <p class="session-kicker">01 / FOCUS SESSION</p><p class="timer-label">ให้เวลากับสิ่งที่คุณรัก</p><div class="clock" id="clock">00:00</div>
+    <p class="timer-status" id="timerStatus" aria-live="polite">
+      <span class="run-dot" aria-hidden="true"></span><span id="statusText">พร้อมเริ่มซ้อม</span>
+    </p>
+    <div class="timer-actions" id="timerActions">
+      <button type="button" class="btn primary btn-lg btn-block" id="btnStart">เริ่มซ้อม</button>
+      <button type="button" class="btn secondary hidden" id="btnPause">พัก</button>
+      <button type="button" class="btn secondary hidden" id="btnResume">ซ้อมต่อ</button>
+      <button type="button" class="btn primary hidden" id="btnStop">หยุดและบันทึก</button>
+    </div>
+  </section>
+
+  <!-- แผ่นบันทึก: ปรากฏใต้การ์ดจับเวลาหลังกดหยุด -->
+  <section class="card sheet hidden" id="saveSheet" aria-labelledby="saveHeading">
+    <h2 id="saveHeading">ซ้อมอะไรอยู่?</h2>
+    <div class="chips" id="chips" role="group" aria-label="ซ้อมอะไรอยู่?"></div>
+    <input type="text" id="labelInput" maxlength="60" placeholder="เช่น Chopin Étude · ห้อง 1–8" autocomplete="off" enterkeyhint="done" aria-label="ซ้อมอะไร">
+    <p class="hint" id="labelHint">เลือกหรือพิมพ์ว่าซ้อมอะไร</p>
+    <label class="field-label" for="noteInput">โน้ตสั้น ๆ (ไม่บังคับ)</label>
+    <textarea placeholder="เช่น มือซ้ายยังไม่สม่ำเสมอ รอบหน้าลองซ้อมช้าลง" id="noteInput" maxlength="200" rows="2"></textarea>
+    <p class="short-warn hidden" id="shortWarn">ซ้อมไม่ถึง 1 นาที จะบันทึกก็ได้</p>
+    <div class="sheet-actions">
+      <button type="button" class="btn primary" id="btnSave" disabled>บันทึก</button>
+      <button type="button" class="btn secondary" id="btnDiscard">ไม่บันทึก</button>
+    </div>
+  </section>
+
+  <!-- กราฟ 7 วัน: เส้นไม้เทียบเสียงคือลายเซ็นของการ์ดนี้ -->
+  <section class="card week-card" id="weekCard" aria-labelledby="weekTitle">
+    <div class="staff" aria-hidden="true"></div>
+    <div class="card-head">
+      <h2 id="weekTitle">7 วันล่าสุด</h2>
+      <p class="today-prog" id="todayProg">วันนี้ 0/30 นาที</p>
+    </div>
+    <div class="progress" aria-hidden="true"><i class="progress-fill" id="progressFill"></i></div>
+    <div class="chart" aria-hidden="true">
+      <div class="plot" id="plot">
+        <div class="goal-line" id="goalLine"></div>
+        <div class="goal-label" id="goalLabel">เป้า 30 นาที</div>
+        <div class="chart-cols" id="chartCols"></div>
+      </div>
+      <div class="dows" id="chartDows"></div>
+    </div>
+    <p class="week-summary" id="weekSummary">รวม 0 นาที · ซ้อมติดกัน 0 วัน</p>
+    <table class="sr-only" id="weekTable"><tbody></tbody></table>
+  </section>
+
+  <!-- รายการบันทึก -->
+  <section class="card log-card" id="logCard" aria-labelledby="logTitle">
+    <div class="staff" aria-hidden="true"></div>
+    <h2 id="logTitle">บันทึกล่าสุด</h2>
+    <p class="empty" id="logEmpty">ยังไม่มีบันทึก กดเริ่มซ้อมเพื่อบันทึกครั้งแรก</p>
+    <div id="logList"></div>
+  </section>
+
+  <!-- ตั้งค่าและข้อมูล -->
+  <details class="card settings" id="settings">
+    <summary>ตั้งค่าและข้อมูล</summary>
+    <div class="settings-body">
+      <div class="setblock">
+        <span class="setlabel" id="goalLabelText">เป้าหมายต่อวัน (นาที)</span>
+        <div class="stepper">
+          <button type="button" class="btn secondary" id="btnGoalMinus" aria-label="ลดเป้าหมาย">−</button>
+          <input type="number" id="goalInput" min="5" max="300" step="5" value="30" inputmode="numeric" aria-labelledby="goalLabelText">
+          <button type="button" class="btn secondary" id="btnGoalPlus" aria-label="เพิ่มเป้าหมาย">+</button>
+        </div>
+      </div>
+
+      <div class="setblock" id="wakeRow">
+        <label class="switchrow" for="wakeInput">
+          <span class="switchwrap">
+            <input type="checkbox" id="wakeInput" role="switch">
+            <span class="track" aria-hidden="true"></span>
+            <span class="thumb" aria-hidden="true"></span>
+          </span>
+          <span class="switchtext">ไม่ให้หน้าจอดับตอนจับเวลา</span>
+        </label>
+      </div>
+
+      <div class="setblock">
+        <div class="setbtns">
+          <button type="button" class="btn secondary" id="btnCopySummary">คัดลอกสรุปสัปดาห์</button>
+          <button type="button" class="btn secondary" id="btnCopyBackup">คัดลอกข้อมูลสำรอง</button>
+        </div>
+        <div class="copy-fallback hidden" id="copyFallbackWrap">
+          <textarea id="copyFallback" class="copy-fallback-text" readonly rows="4" aria-label="ข้อความที่คัดลอก"></textarea>
+        </div>
+      </div>
+
+      <div class="setblock">
+        <label class="setlabel" for="importArea">วางข้อมูลสำรอง</label>
+        <textarea id="importArea" class="importarea" rows="3" spellcheck="false" aria-label="วางข้อมูลสำรอง"></textarea>
+        <div class="setbtns" style="margin-top:8px">
+          <button type="button" class="btn secondary" id="btnImport">นำเข้า</button>
+        </div>
+        <p class="setnote" id="importMsg" role="status"></p>
+      </div>
+
+      <div class="setblock">
+        <button type="button" class="btn secondary btn-block" id="btnClear">ล้างข้อมูลทั้งหมด</button>
+      </div>
+
+      <p class="privacy">ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ส่งไปที่อื่น เพื่อนที่เปิดลิงก์เดียวกันจะไม่เห็นบันทึกของคุณ</p>
+    </div>
+  </details>
+
+  <section id="summaryPage" class="card" hidden><div class="report-heading"><div><p class="session-kicker">PRACTICE INSIGHTS</p><h2>สรุปการฝึกซ้อม</h2></div><div class="report-tabs" role="group" aria-label="ช่วงเวลา"><button type="button" class="btn secondary" data-period="day">วัน</button><button type="button" class="btn secondary" data-period="month">เดือน</button><button type="button" class="btn secondary" data-period="year">ปี</button></div></div><div class="report-controls"><button class="btn secondary" type="button" id="reportPrev" aria-label="ช่วงก่อนหน้า">‹</button><label><span class="sr-only">วันที่อ้างอิง</span><input id="reportDate" type="date" required></label><button class="btn secondary" type="button" id="reportNext" aria-label="ช่วงถัดไป">›</button><strong id="reportRange"></strong></div><div class="report-metrics" id="reportMetrics"></div><h3>เวลาซ้อมจริง</h3><div class="report-chart" id="reportChart" role="img"></div><p id="reportEmpty" class="planner-help"></p><p class="planner-help">เวลาซ้อมจริงนับตามวันที่จบแต่ละรอบ ค่าเฉลี่ยรวมวันที่ไม่ได้ซ้อมด้วย แผนไม่ถือเป็นการซ้อมสำเร็จอัตโนมัติ</p><h3>รายละเอียดสถิติ</h3><div class="table-wrap"><table class="report-table"><thead><tr><th>ช่วงเวลา</th><th>ซ้อมจริง (นาที)</th><th>แผน (นาที)</th><th>จำนวนรอบ</th></tr></thead><tbody id="reportRows"></tbody></table></div><h3>ตารางเวลาที่วางแผนไว้</h3><div id="reportPlans"></div></section>
+<footer>
+    <p>บันทึกการซ้อม · สร้างด้วย AI ช่วย · วิชา 3500230</p>
+  <p>ปรับ UI/UX โดยใช้ ChatGPT ช่วยออกแบบและตรวจโค้ด</p></footer>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+(function(){
+/* ---------- ค่าคงที่ ---------- */
+var KEY_ENTRIES='practice-log-entries-v1';
+var KEY_TIMER='practice-log-timer-v1';
+var KEY_SETTINGS='practice-log-settings-v1';
+var PRESETS=['สเกล','อาร์เปจโจ','เพลงหลัก','อ่านโน้ต','ฝึกหู','เทคนิค'];
+var MAX_ENTRIES=500;
+var MAX_RESTORE_SECONDS=43200;
+var GOAL_MIN=5, GOAL_MAX=300;
+var DOW=['อา','จ','อ','พ','พฤ','ศ','ส'];
+var MONTHS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+var CHART_H=156, BAR_MAX=112;
+
+/* ---------- ยูทิลิตีสั้น ๆ ---------- */
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function pad2(n){return (n<10?'0':'')+n;}
+function vis(node,on){if(node){node.classList.toggle('hidden',!on);}}
+function isNum(v){return typeof v==='number'&&isFinite(v);}
+function text(node,t){node.textContent=t;return node;}
+
+/* ---------- พื้นที่เก็บข้อมูล: localStorage พร้อมสำรองในหน่วยความจำ ---------- */
+var storage=(function(){
+  var ok=false;
+  try{
+    localStorage.setItem('practice-log-probe','1');
+    localStorage.removeItem('practice-log-probe');
+    ok=true;
+  }catch(e){ok=false;}
+  var mem={};
+  return {
+    ok:ok,
+    get:function(k){
+      /* พื้นที่เก็บใช้ได้: อ่านจาก localStorage จริงเสมอ เพื่อให้เห็นการลบจากแท็บอื่น */
+      if(ok){
+        try{return localStorage.getItem(k);}catch(e){}
+      }
+      return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null;
+    },
+    set:function(k,v){
+      mem[k]=v;
+      if(ok){try{localStorage.setItem(k,v);}catch(e){}}
+    },
+    remove:function(k){
+      delete mem[k];
+      if(ok){try{localStorage.removeItem(k);}catch(e){}}
+    }
+  };
+})();
+
+function readJSON(k,fallback){
+  var raw=storage.get(k);
+  if(raw===null||raw===undefined) return fallback;
+  try{
+    var v=JSON.parse(raw);
+    return (v===null||v===undefined)?fallback:v;
+  }catch(e){
+    return fallback;
+  }
+}
+
+/* ---------- ข้อมูลในหน่วยความจำ ---------- */
+var entries=[];
+var settings={goalMinutes:30,wakeLock:false};
+var state='idle';               /* idle | running | paused | saving */
+var startedAtMs=0;
+var accumulatedMs=0;
+var lastElapsedMs=0;
+var tickId=0;
+var toastTimer=0;
+var restorePending=false;
+
+/* ---------- วันที่และข้อความภาษาไทย (เขียนเอง ไม่พึ่ง Intl) ---------- */
+function dayKey(d){
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
+function startOfDay(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+function addDays(d,n){return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);}
+function parseDate(v){
+  var d=new Date(v);
+  return isNaN(d.getTime())?null:d;
+}
+function thaiDate(d){
+  return DOW[d.getDay()]+'. '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+(d.getFullYear()+543);
+}
+function timeOfDay(d){return pad2(d.getHours())+':'+pad2(d.getMinutes());}
+function minutesOf(seconds){return Math.round(seconds/60);}
+function durationText(seconds){
+  var m=minutesOf(seconds);
+  if(m<1) return '< 1 นาที';
+  if(m>=60){
+    var h=Math.floor(m/60);
+    var r=m%60;
+    return h+' ชม. '+r+' นาที';
+  }
+  return m+' นาที';
+}
+
+/* ---------- ตัวจับเวลา: คำนวณจาก timestamp จริงเสมอ ---------- */
+function currentElapsed(){
+  var e=accumulatedMs;
+  if(state==='running'){
+    var delta=Date.now()-startedAtMs;
+    e+=(delta>0?delta:0);
+  }
+  if(e<lastElapsedMs) e=lastElapsedMs;
+  else lastElapsedMs=e;
+  return e;
+}
+function fmtClock(ms){
+  var s=Math.floor(Math.max(0,ms)/1000);
+  var h=Math.floor(s/3600);
+  var m=Math.floor((s%3600)/60);
+  var sec=s%60;
+  if(h>0) return h+':'+pad2(m)+':'+pad2(sec);
+  return pad2(m)+':'+pad2(sec);
+}
+function saveTimer(){
+  if(state==='idle'){storage.remove(KEY_TIMER);return;}
+  storage.set(KEY_TIMER,JSON.stringify({
+    state:state,
+    startedAtMs:Math.round(startedAtMs),
+    accumulatedMs:Math.round(accumulatedMs)
+  }));
+}
+function renderClockOnly(){
+  $('clock').textContent=fmtClock(currentElapsed());
+}
+function startTick(){
+  if(tickId) return;
+  tickId=setInterval(function(){
+    if(document.hidden) return;
+    if(state==='running') renderClockOnly();
+  },250);
+}
+function stopTick(){
+  if(tickId){clearInterval(tickId);tickId=0;}
+}
+function renderTimer(){
+  var elapsed=(state==='idle')?0:currentElapsed();
+  $('clock').textContent=fmtClock(elapsed);
+  var label='';
+  if(state==='idle') label='พร้อมเริ่มซ้อม';
+  else if(state==='running') label='กำลังซ้อมอยู่…';
+  else if(state==='paused') label='พักอยู่';
+  $('statusText').textContent=label;
+  vis($('timerStatus'),label!=='');
+  $('timerCard').classList.toggle('is-running',state==='running');
+  vis($('timerActions'),!restorePending);
+  vis($('btnStart'),state==='idle');
+  vis($('btnPause'),state==='running');
+  vis($('btnResume'),state==='paused');
+  vis($('btnStop'),state==='running'||state==='paused');
+}
+function startTimer(){
+  hideRestore();
+  stopTick();
+  state='running';
+  startedAtMs=Date.now();
+  accumulatedMs=0;
+  lastElapsedMs=0;
+  saveTimer();
+  startTick();
+  requestWake();
+  renderTimer();
+}
+function pauseTimer(){
+  if(state!=='running') return;
+  hideRestore();
+  accumulatedMs=currentElapsed();
+  startedAtMs=0;
+  state='paused';
+  saveTimer();
+  stopTick();
+  releaseWake();
+  renderTimer();
+}
+function resumeTimer(){
+  if(state!=='paused') return;
+  state='running';
+  startedAtMs=Date.now();
+  saveTimer();
+  startTick();
+  requestWake();
+  renderTimer();
+}
+function stopTimer(){
+  if(state!=='running'&&state!=='paused') return;
+  hideRestore();
+  accumulatedMs=(state==='running')?currentElapsed():accumulatedMs;
+  startedAtMs=0;
+  lastElapsedMs=accumulatedMs;
+  state='saving';
+  saveTimer();
+  stopTick();
+  releaseWake();
+  renderTimer();
+  openSheet();
+}
+function resetTimer(){
+  state='idle';
+  accumulatedMs=0;
+  startedAtMs=0;
+  lastElapsedMs=0;
+  stopTick();
+  releaseWake();
+  storage.remove(KEY_TIMER);
+  hideRestore();
+  hideSheet();
+  renderTimer();
+}
+
+/* ---------- แจ้งเตือนกู้เวลาที่ค้างอยู่ ---------- */
+function showRestore(stale){
+  $('restoreText').textContent='พบเวลาที่ค้างอยู่ ('+fmtClock(currentElapsed())+')';
+  vis($('restoreCap'),!!stale);
+  vis($('restoreNote'),true);
+  restorePending=true;
+  if(stale){
+    setTimeout(function(){
+      var b=$('btnRestoreStop');
+      try{b.focus({preventScroll:true});}catch(e){try{b.focus();}catch(e2){}}
+    },30);
+  }
+}
+function hideRestore(){
+  vis($('restoreNote'),false);
+  restorePending=false;
+}
+
+/* ---------- Wake Lock (ถ้าเบราว์เซอร์รองรับ) ---------- */
+var wakeSentinel=null;
+function wakeSupported(){
+  return !!(navigator.wakeLock&&typeof navigator.wakeLock.request==='function');
+}
+function requestWake(){
+  if(!settings.wakeLock||!wakeSupported()||state!=='running'||document.hidden) return;
+  if(wakeSentinel) return;
+  try{
+    navigator.wakeLock.request('screen').then(function(s){
+      wakeSentinel=s;
+      try{
+        s.addEventListener('release',function(){
+          if(wakeSentinel===s) wakeSentinel=null;
+        });
+      }catch(e){}
+    },function(){});
+  }catch(e){}
+}
+function releaseWake(){
+  if(wakeSentinel){
+    try{wakeSentinel.release();}catch(e){}
+    wakeSentinel=null;
+  }
+}
+
+/* ---------- แผ่นบันทึก ---------- */
+var discardTimer=0;
+function renderChips(){
+  var box=$('chips');
+  box.textContent='';
+  var seen=Object.create(null);
+  var list=[];
+  var i;
+  for(i=0;i<PRESETS.length;i++){
+    seen[PRESETS[i].toLowerCase()]=true;
+    list.push(PRESETS[i]);
+  }
+  var recent=0;
+  for(i=0;i<entries.length&&recent<5;i++){
+    var l=(entries[i].label||'').trim();
+    if(!l) continue;
+    var key=l.toLowerCase();
+    if(seen[key]) continue;
+    seen[key]=true;
+    list.push(l);
+    recent++;
+  }
+  for(i=0;i<list.length;i++){
+    (function(label){
+      var b=document.createElement('button');
+      b.type='button';
+      b.className='chip';
+      b.textContent=label;
+      b.title=label;
+      b.addEventListener('click',function(){
+        $('labelInput').value=label.slice(0,60);
+        updateSaveState();
+      });
+      box.appendChild(b);
+    })(list[i]);
+  }
+}
+function updateSaveState(){
+  var label=$('labelInput').value.trim();
+  var empty=(label.length===0);
+  $('btnSave').disabled=empty;
+  vis($('labelHint'),empty);
+}
+function openSheet(){
+  renderChips();
+  $('labelInput').value='';
+  $('noteInput').value='';
+  resetDiscard();
+  updateSaveState();
+  vis($('shortWarn'),currentElapsed()<60000);
+  vis($('saveSheet'),true);
+}
+function hideSheet(){
+  vis($('saveSheet'),false);
+  $('labelInput').value='';
+  $('noteInput').value='';
+  resetDiscard();
+}
+function makeId(){
+  var rnd='';
+  while(rnd.length<4){
+    rnd+=(Math.random().toString(36).slice(2)+'0000').slice(0,4-rnd.length);
+  }
+  return Date.now()+'-'+rnd.slice(0,4);
+}
+function saveEntry(){
+  var label=$('labelInput').value.trim();
+  if(!label) return;
+  var note=$('noteInput').value.trim();
+  var secs=Math.max(0,Math.round(currentElapsed()/1000));
+  entries.unshift({
+    id:makeId(),
+    endedAt:new Date().toISOString(),
+    seconds:secs,
+    label:label.slice(0,60),
+    note:note.slice(0,200)
+  });
+  if(entries.length>MAX_ENTRIES) entries=entries.slice(0,MAX_ENTRIES);
+  saveEntries();
+  resetTimer();
+  renderWeek();
+  renderLog();
+  toast('บันทึกแล้ว');
+}
+function resetDiscard(){
+  var b=$('btnDiscard');
+  clearTimeout(discardTimer);
+  discardTimer=0;
+  if(b){
+    b.setAttribute('data-armed','0');
+    b.textContent='ไม่บันทึก';
+    b.classList.remove('is-armed');
+  }
+}
+function armDiscard(){
+  var b=$('btnDiscard');
+  if(b.getAttribute('data-armed')==='1'){
+    resetDiscard();
+    resetTimer();
+    return;
+  }
+  b.setAttribute('data-armed','1');
+  b.textContent='แน่ใจนะ? กดอีกครั้ง';
+  b.classList.add('is-armed');
+  clearTimeout(discardTimer);
+  discardTimer=setTimeout(resetDiscard,4000);
+}
+
+/* ---------- ประกาศลอย ---------- */
+function toast(msg){
+  var t=$('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+/* ---------- สรุปสัปดาห์ ---------- */
+function weekData(){
+  var base=startOfDay(new Date());
+  var days=[];
+  var byKey=Object.create(null);
+  var i;
+  for(i=0;i<7;i++){
+    var d=addDays(base,i-6);
+    var day={date:d,key:dayKey(d),seconds:0,minutes:0};
+    days.push(day);
+    byKey[day.key]=day;
+  }
+  for(i=0;i<entries.length;i++){
+    var e=entries[i];
+    var ed=parseDate(e.endedAt);
+    if(!ed) continue;
+    var target=byKey[dayKey(ed)];
+    if(target) target.seconds+=e.seconds;
+  }
+  var total=0,maxM=0;
+  for(i=0;i<days.length;i++){
+    days[i].minutes=minutesOf(days[i].seconds);
+    total+=days[i].minutes;
+    if(days[i].minutes>maxM) maxM=days[i].minutes;
+  }
+  return {
+    days:days,
+    totalMinutes:total,
+    maxMinutes:maxM,
+    todayMinutes:days[6].minutes,
+    streak:computeStreak(base)
+  };
+}
+function computeStreak(base){
+  var byKey=Object.create(null);
+  var i;
+  for(i=0;i<entries.length;i++){
+    var e=entries[i];
+    var d=parseDate(e.endedAt);
+    if(!d) continue;
+    var k=dayKey(d);
+    byKey[k]=(byKey[k]||0)+e.seconds;
+  }
+  var d=startOfDay(base);
+  if((byKey[dayKey(d)]||0)<60) d=addDays(d,-1);
+  var n=0;
+  while((byKey[dayKey(d)]||0)>=60){
+    n++;
+    d=addDays(d,-1);
+    if(n>40000) break;
+  }
+  return n;
+}
+
+/* ---------- กราฟ ---------- */
+var chartCols=[];
+var chartDows=[];
+function buildChart(){
+  var cols=$('chartCols');
+  var dows=$('chartDows');
+  cols.textContent='';
+  dows.textContent='';
+  chartCols=[];
+  chartDows=[];
+  for(var i=0;i<7;i++){
+    var col=document.createElement('div');
+    col.className='col';
+    var val=document.createElement('span');
+    val.className='col-val';
+    var chk=document.createElement('span');
+    chk.className='col-chk';
+    chk.textContent='✓';
+    chk.setAttribute('aria-hidden','true');
+    var bar=document.createElement('div');
+    bar.className='bar';
+    var dot=document.createElement('span');
+    dot.className='bar-dot';
+    col.appendChild(val);
+    col.appendChild(chk);
+    col.appendChild(bar);
+    col.appendChild(dot);
+    cols.appendChild(col);
+    var dow=document.createElement('span');
+    dow.className='dow';
+    dows.appendChild(dow);
+    chartCols.push({val:val,chk:chk,bar:bar,dot:dot});
+    chartDows.push(dow);
+  }
+}
+function renderWeek(){
+  var data=weekData();
+  $('todayProg').textContent='วันนี้ '+data.todayMinutes+'/'+settings.goalMinutes+' นาที';
+  var pct=(settings.goalMinutes>0)?Math.min(100,Math.round(data.todayMinutes/settings.goalMinutes*100)):0;
+  var fill=$('progressFill');
+  fill.style.width=pct+'%';
+  fill.classList.toggle('met',data.todayMinutes>=settings.goalMinutes);
+
+  var scale=Math.max(settings.goalMinutes,data.maxMinutes,1);
+  var goalPx=Math.round(settings.goalMinutes/scale*BAR_MAX);
+  $('goalLine').style.bottom=goalPx+'px';
+  $('goalLabel').textContent='เป้า '+settings.goalMinutes+' นาที';
+  $('goalLabel').style.bottom=clamp(goalPx-9,0,CHART_H-18)+'px';
+
+  for(var i=0;i<7;i++){
+    var day=data.days[i];
+    var c=chartCols[i];
+    var m=day.minutes;
+    var barPx=(m>0)?Math.max(2,Math.round(m/scale*BAR_MAX)):0;
+    c.bar.style.height=barPx+'px';
+    c.bar.style.display=(m>0)?'block':'none';
+    c.bar.classList.toggle('is-today',i===6);
+    c.dot.style.display=(m>0)?'none':'block';
+    c.dot.classList.toggle('is-today',i===6);
+    c.val.textContent=String(m);
+    c.val.style.bottom=((barPx>0?barPx:8)+10)+'px';
+    vis(c.chk,m>=settings.goalMinutes);
+    c.chk.style.bottom=(barPx+28)+'px';
+    var dow=chartDows[i];
+    dow.textContent=DOW[day.date.getDay()];
+    dow.classList.toggle('is-today',i===6);
+  }
+  $('weekSummary').textContent='รวม '+data.totalMinutes+' นาที · ซ้อมติดกัน '+data.streak+' วัน';
+  renderWeekTable(data);
+}
+function renderWeekTable(data){
+  var body=$('weekTable').getElementsByTagName('tbody')[0];
+  body.textContent='';
+  for(var i=0;i<7;i++){
+    var tr=document.createElement('tr');
+    var th=document.createElement('th');
+    th.scope='row';
+    th.textContent=(i===6?'วันนี้ ':'')+DOW[data.days[i].date.getDay()]+'.';
+    var td=document.createElement('td');
+    td.textContent=data.days[i].minutes+' นาที';
+    tr.appendChild(th);
+    tr.appendChild(td);
+    body.appendChild(tr);
+  }
+}
+
+/* ---------- รายการบันทึก ---------- */
+function renderLog(){
+  var list=$('logList');
+  list.textContent='';
+  var items=entries.slice(0,30);
+  vis($('logEmpty'),items.length===0);
+  vis(list,items.length>0);
+  if(!items.length) return;
+
+  var today=startOfDay(new Date());
+  var todayKey=dayKey(today);
+  var yestKey=dayKey(addDays(today,-1));
+  var currentKey=null;
+  var group=null;
+  for(var i=0;i<items.length;i++){
+    var e=items[i];
+    var d=parseDate(e.endedAt);
+    if(!d) continue;
+    var k=dayKey(d);
+    if(k!==currentKey){
+      currentKey=k;
+      var h=document.createElement('h3');
+      h.className='log-day';
+      h.textContent=(k===todayKey)?'วันนี้':((k===yestKey)?'เมื่อวาน':thaiDate(d));
+      list.appendChild(h);
+      group=document.createElement('div');
+      group.className='entries';
+      list.appendChild(group);
+    }
+    group.appendChild(buildEntryRow(e,d));
+  }
+}
+function buildEntryRow(e,d){
+  var row=document.createElement('div');
+  row.className='entry';
+
+  var main=document.createElement('div');
+  main.className='entry-main';
+  var line=document.createElement('div');
+  line.className='entry-line';
+  var dur=document.createElement('span');
+  dur.className='entry-dur';
+  dur.textContent=durationText(e.seconds);
+  var lab=document.createElement('span');
+  lab.className='entry-label';
+  lab.textContent=e.label;
+  var time=document.createElement('span');
+  time.className='entry-time';
+  time.textContent=timeOfDay(d);
+  line.appendChild(dur);
+  line.appendChild(lab);
+  line.appendChild(time);
+  main.appendChild(line);
+  if(e.note){
+    var note=document.createElement('p');
+    note.className='entry-note';
+    note.textContent=e.note;
+    main.appendChild(note);
+  }
+
+  var del=document.createElement('button');
+  del.type='button';
+  del.className='btn secondary del';
+  del.textContent='ลบ';
+  var armed=false;
+  var timer=0;
+  del.addEventListener('click',function(){
+    if(!armed){
+      armed=true;
+      del.textContent='ยืนยันลบ';
+      del.classList.add('is-armed');
+      timer=setTimeout(function(){
+        armed=false;
+        del.textContent='ลบ';
+        del.classList.remove('is-armed');
+      },4000);
+    }else{
+      clearTimeout(timer);
+      entries=entries.filter(function(x){return x.id!==e.id;});
+      saveEntries();
+      if(state==='saving') renderChips();
+      renderWeek();
+      renderLog();
+    }
+  });
+
+  row.appendChild(main);
+  row.appendChild(del);
+  return row;
+}
+
+/* ---------- บันทึกและโหลดข้อมูล ---------- */
+function sanitizeEntry(raw){
+  if(!raw||typeof raw!=='object') return null;
+  var id=(typeof raw.id==='string'&&raw.id.length>0)?raw.id:null;
+  if(!id) return null;
+  var d=parseDate(raw.endedAt);
+  if(!d) return null;
+  var sec=Number(raw.seconds);
+  if(!isFinite(sec)||sec<0) sec=0;
+  var label=(typeof raw.label==='string')?raw.label.trim().slice(0,60):'';
+  if(!label) return null;
+  var note=(typeof raw.note==='string')?raw.note.trim().slice(0,200):'';
+  return {
+    id:id,
+    endedAt:new Date(d.getTime()).toISOString(),
+    seconds:Math.round(sec),
+    label:label,
+    note:note
+  };
+}
+function normalizeEntries(raw){
+  if(!Array.isArray(raw)) return [];
+  var seen=Object.create(null);
+  var out=[];
+  for(var i=0;i<raw.length;i++){
+    var e=sanitizeEntry(raw[i]);
+    if(!e) continue;
+    if(seen[e.id]) continue;
+    seen[e.id]=true;
+    out.push(e);
+  }
+  out.sort(function(a,b){
+    return new Date(b.endedAt).getTime()-new Date(a.endedAt).getTime();
+  });
+  return out.slice(0,MAX_ENTRIES);
+}
+function loadEntries(){
+  entries=normalizeEntries(readJSON(KEY_ENTRIES,[]));
+}
+function saveEntries(){
+  storage.set(KEY_ENTRIES,JSON.stringify(entries));
+}
+function loadSettings(){
+  var raw=readJSON(KEY_SETTINGS,null);
+  var goal=30;
+  var wake=false;
+  if(raw&&typeof raw==='object'){
+    var n=Number(raw.goalMinutes);
+    if(isFinite(n)&&n>0) goal=clamp(Math.round(n/5)*5,GOAL_MIN,GOAL_MAX);
+    wake=(raw.wakeLock===true);
+  }
+  settings={goalMinutes:goal,wakeLock:wake};
+  renderSettings();
+}
+function saveSettings(){
+  storage.set(KEY_SETTINGS,JSON.stringify(settings));
+}
+function renderSettings(){
+  var gi=$('goalInput');
+  if(document.activeElement!==gi) gi.value=String(settings.goalMinutes);
+  $('wakeInput').checked=!!settings.wakeLock;
+}
+
+/* ---------- ตั้งค่า: เป้าหมายและ wake lock ---------- */
+function commitGoal(v){
+  var n=Number(v);
+  if(v===''||!isFinite(n)) n=settings.goalMinutes;
+  n=clamp(Math.round(n/5)*5,GOAL_MIN,GOAL_MAX);
+  settings.goalMinutes=n;
+  saveSettings();
+  $('goalInput').value=String(n);
+  renderWeek();
+}
+function onWakeChange(){
+  settings.wakeLock=$('wakeInput').checked;
+  saveSettings();
+  if(settings.wakeLock&&state==='running') requestWake();
+  else releaseWake();
+}
+
+/* ---------- คัดลอกข้อความ ---------- */
+function copyToClipboard(txt){
+  var settled=false;
+  function success(){
+    if(settled) return;
+    settled=true;
+    toast('คัดลอกแล้ว');
+  }
+  function failure(){
+    if(settled) return;
+    if(fallbackCopy(txt)){success();return;}
+    settled=true;
+    showCopyFallback(txt);
+  }
+  if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){
+    try{
+      navigator.clipboard.writeText(txt).then(success,failure);
+      return;
+    }catch(e){}
+  }
+  if(fallbackCopy(txt)) success();
+  else failure();
+}
+function fallbackCopy(txt){
+  var ta=document.createElement('textarea');
+  ta.value=txt;
+  ta.setAttribute('readonly','');
+  ta.style.position='fixed';
+  ta.style.top='0';
+  ta.style.left='-9999px';
+  ta.style.opacity='0';
+  document.body.appendChild(ta);
+  var ok=false;
+  try{
+    ta.select();
+    if(ta.setSelectionRange) ta.setSelectionRange(0,txt.length);
+    ok=document.execCommand('copy');
+  }catch(e){ok=false;}
+  document.body.removeChild(ta);
+  return ok;
+}
+function showCopyFallback(txt){
+  clearTimeout(toastTimer);
+  $('toast').classList.remove('show');
+  var wrap=$('copyFallbackWrap');
+  var area=$('copyFallback');
+  area.value=txt;
+  vis(wrap,true);
+  try{area.focus();area.select();}catch(e){}
+}
+function summaryText(){
+  var data=weekData();
+  var lines=['สรุปการซ้อม 7 วันล่าสุด'];
+  for(var i=0;i<7;i++){
+    lines.push(DOW[data.days[i].date.getDay()]+'.: '+data.days[i].minutes+' นาที');
+  }
+  lines.push('รวม '+data.totalMinutes+' นาที · ซ้อมติดกัน '+data.streak+' วัน · เป้า '+settings.goalMinutes+' นาที/วัน');
+  return lines.join('\n');
+}
+function backupText(){
+  return JSON.stringify({
+    entries:entries,
+    settings:{goalMinutes:settings.goalMinutes,wakeLock:settings.wakeLock}
+  },null,2);
+}
+
+/* ---------- นำเข้าข้อมูลสำรอง ---------- */
+function importBackup(){
+  var txt=$('importArea').value;
+  var data;
+  try{data=JSON.parse(txt);}catch(e){data=null;}
+  if(!data||typeof data!=='object'||!Array.isArray(data.entries)){
+    $('importMsg').textContent='ข้อมูลไม่ถูกต้อง ลองคัดลอกใหม่';
+    return;
+  }
+  var known=Object.create(null);
+  var i;
+  for(i=0;i<entries.length;i++) known[entries[i].id]=true;
+  var incoming=[];
+  for(i=0;i<data.entries.length;i++){
+    var e=sanitizeEntry(data.entries[i]);
+    if(!e||known[e.id]) continue;
+    known[e.id]=true;
+    incoming.push(e);
+  }
+  entries=normalizeEntries(entries.concat(incoming));
+  saveEntries();
+
+  if(data.settings&&typeof data.settings==='object'){
+    var changed=false;
+    var g=Number(data.settings.goalMinutes);
+    if(isFinite(g)&&g>0){
+      settings.goalMinutes=clamp(Math.round(g/5)*5,GOAL_MIN,GOAL_MAX);
+      changed=true;
+    }
+    if(typeof data.settings.wakeLock==='boolean'){
+      settings.wakeLock=data.settings.wakeLock;
+      changed=true;
+    }
+    if(changed){
+      saveSettings();
+      renderSettings();
+    }
+  }
+
+  $('importMsg').textContent='นำเข้า '+incoming.length+' รายการ';
+  $('importArea').value='';
+  if(state==='saving') renderChips();
+  renderWeek();
+  renderLog();
+}
+
+/* ---------- ล้างข้อมูลทั้งหมด ---------- */
+var clearTimer=0;
+var clearArmed=false;
+function resetClearButton(){
+  var b=$('btnClear');
+  clearTimeout(clearTimer);
+  clearTimer=0;
+  clearArmed=false;
+  b.textContent='ล้างข้อมูลทั้งหมด';
+  b.classList.remove('is-armed');
+}
+function armClear(){
+  var b=$('btnClear');
+  if(clearArmed){
+    resetClearButton();
+    entries=[];
+    saveEntries();
+    resetTimer();
+    $('importMsg').textContent='';
+    renderWeek();
+    renderLog();
+    return;
+  }
+  clearArmed=true;
+  b.textContent='ยืนยันล้างทั้งหมด';
+  b.classList.add('is-armed');
+  clearTimeout(clearTimer);
+  clearTimer=setTimeout(resetClearButton,4000);
+}
+
+/* ---------- อ่านค่าจากพื้นที่เก็บเมื่อแท็บกลับมา ---------- */
+function reloadFromStorage(){
+  loadEntries();
+  loadSettings();
+  if(state==='saving') renderChips();
+  renderWeek();
+  renderLog();
+}
+
+/* ---------- ผูกเหตุการณ์ทั้งหมด ---------- */
+function bindEvents(){
+  $('btnStart').addEventListener('click',startTimer);
+  $('btnPause').addEventListener('click',pauseTimer);
+  $('btnResume').addEventListener('click',resumeTimer);
+  $('btnStop').addEventListener('click',stopTimer);
+  $('btnRestoreKeep').addEventListener('click',function(){
+    hideRestore();
+    renderTimer();
+  });
+  $('btnRestoreStop').addEventListener('click',function(){
+    hideRestore();
+    stopTimer();
+  });
+
+  $('labelInput').addEventListener('input',updateSaveState);
+  $('btnSave').addEventListener('click',saveEntry);
+  $('btnDiscard').addEventListener('click',armDiscard);
+  $('btnGoalMinus').addEventListener('click',function(){commitGoal(settings.goalMinutes-5);});
+  $('btnGoalPlus').addEventListener('click',function(){commitGoal(settings.goalMinutes+5);});
+  $('goalInput').addEventListener('input',function(){
+    var raw=$('goalInput').value;
+    if(raw==='') return;
+    var n=Number(raw);
+    if(!isFinite(n)) return;
+    n=clamp(Math.round(n),GOAL_MIN,GOAL_MAX);
+    if(n!==settings.goalMinutes){
+      settings.goalMinutes=n;
+      saveSettings();
+      renderWeek();
+    }
+  });
+  $('goalInput').addEventListener('change',function(){commitGoal($('goalInput').value);});
+  $('wakeInput').addEventListener('change',onWakeChange);
+
+  $('btnCopySummary').addEventListener('click',function(){copyToClipboard(summaryText());});
+  $('btnCopyBackup').addEventListener('click',function(){copyToClipboard(backupText());});
+  $('btnImport').addEventListener('click',importBackup);
+  $('btnClear').addEventListener('click',armClear);
+
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){
+      releaseWake();
+      return;
+    }
+    reloadFromStorage();
+    renderTimer();
+    if(state==='running'){
+      startTick();
+      requestWake();
+    }
+  });
+  window.addEventListener('storage',function(ev){
+    if(ev.key===null||ev.key===KEY_ENTRIES||ev.key===KEY_SETTINGS){
+      reloadFromStorage();
+    }
+  });
+}
+
+/* ---------- กู้สถานะตัวจับเวลาตอนเปิดหน้า ---------- */
+function initTimer(){
+  var raw=readJSON(KEY_TIMER,null);
+  if(!raw||typeof raw!=='object') return;
+  var st=raw.state;
+  var acc=Number(raw.accumulatedMs);
+  var started=Number(raw.startedAtMs);
+  if(!isFinite(acc)||acc<0) acc=0;
+  if(!isFinite(started)||started<0) started=0;
+
+  if(st==='paused'){
+    state='paused';
+    accumulatedMs=acc;
+    startedAtMs=0;
+    lastElapsedMs=acc;
+  }else if(st==='saving'){
+    state='saving';
+    accumulatedMs=acc;
+    startedAtMs=0;
+    lastElapsedMs=acc;
+    openSheet();
+  }else if(st==='running'){
+    var now=Date.now();
+    var stale=(started>0&&(now-started)>MAX_RESTORE_SECONDS*1000);
+    state='running';
+    accumulatedMs=acc;
+    startedAtMs=(started>0?started:now);
+    lastElapsedMs=acc;
+    if(stale){
+      accumulatedMs=MAX_RESTORE_SECONDS*1000;
+      startedAtMs=now;
+      lastElapsedMs=accumulatedMs;
+    }
+    saveTimer();
+    startTick();
+    showRestore(stale);
+    renderTimer();
+    requestWake();
+    return;
+  }
+  renderTimer();
+}
+
+/* ---------- เริ่มต้นแอป ---------- */
+loadEntries();
+loadSettings();
+if(!storage.ok) vis($('storageNote'),true);
+if(!wakeSupported()) vis($('wakeRow'),false);
+buildChart();
+renderSettings();
+bindEvents();
+initTimer();
+renderWeek();
+renderLog();
+renderTimer();
+
+/* ตรวจวันใหม่และเลื่อนกราฟทุกนาทีขณะหน้าแสดงอยู่ */
+setInterval(function(){
+  if(document.hidden) return;
+  renderWeek();
+  renderLog();
+},60000);
+
+})();
+</script>
+
+<script>
+/* Additional planner module. Original practice-log script is unchanged. */
+(function(){'use strict';
+var key='piano-studio-plans-v1',selected=dayKey(new Date()),view=new Date(),plans=[],blocked=false;
+function $(id){return document.getElementById(id)}
+function dayKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function parse(s){return new Date(s+'T12:00:00')}
+function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
+function validPlan(p){return p&&typeof p.id==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(p.date)&&/^\d{2}:\d{2}$/.test(p.start)&&/^\d{2}:\d{2}$/.test(p.end)&&typeof p.label==='string'}
+function load(){var a=read(key);plans=Array.isArray(a)?a.filter(validPlan):[]}
+function minutes(t){return Number(t.slice(0,2))*60+Number(t.slice(3))}
+function save(next){try{localStorage.setItem(key,JSON.stringify(next));plans=next;return true}catch(e){$('plannerMsg').textContent='บันทึกแผนไม่ได้ กรุณาอนุญาตพื้นที่จัดเก็บของเบราว์เซอร์';return false}}
+function entries(){var a=read('practice-log-entries-v1');return Array.isArray(a)?a.filter(function(e){return e&&Number.isFinite(e.seconds)&&!isNaN(new Date(e.endedAt).getTime())}):[]}
+function title(d,opts){return d.toLocaleDateString(window.studioLocale||'th-TH',opts)}
+function choose(date){selected=date;view=parse(date);$('planDate').value=date;render()}
+function render(){var logs=entries(),year=view.getFullYear(),month=view.getMonth(),grid=$('calendarGrid');$('monthTitle').textContent=title(view,{month:'long',year:'numeric'});grid.replaceChildren();['จ','อ','พ','พฤ','ศ','ส','อา'].forEach(function(t){var el=document.createElement('span');el.className='cal-dow';el.textContent=t;grid.append(el)});var offset=(new Date(year,month,1).getDay()+6)%7;for(var i=0;i<offset;i++)grid.append(document.createElement('span'));for(var n=1;n<=new Date(year,month+1,0).getDate();n++){var date=dayKey(new Date(year,month,n)),b=document.createElement('button');b.type='button';b.className='cal-day';b.textContent=n;b.dataset.date=date;b.classList.toggle('selected',date===selected);b.classList.toggle('today',date===dayKey(new Date()));b.classList.toggle('planned',plans.some(function(p){return p.date===date}));b.classList.toggle('recorded',logs.some(function(e){return dayKey(new Date(e.endedAt))===date}));b.setAttribute('aria-pressed',String(date===selected));b.setAttribute('aria-label',title(parse(date),{day:'numeric',month:'long',year:'numeric'}));b.onclick=function(){choose(this.dataset.date)};grid.append(b)}
+var daily=plans.filter(function(p){return p.date===selected}).sort(function(a,b){return a.start.localeCompare(b.start)}),actual=logs.filter(function(e){return dayKey(new Date(e.endedAt))===selected});$('plannedTotal').textContent=daily.reduce(function(a,p){return a+minutes(p.end)-minutes(p.start)},0);$('actualTotal').textContent=Math.round(actual.reduce(function(a,e){return a+e.seconds},0)/60);$('sessionTotal').textContent=actual.length;$('selectedHeading').textContent=title(parse(selected),{weekday:'long',day:'numeric',month:'long'});var list=$('scheduleList');list.replaceChildren();if(!daily.length){var empty=document.createElement('p');empty.className='planner-help';empty.textContent='ยังไม่มีแผนวันนี้ เพิ่มช่วงเวลาซ้อมด้านล่าง';list.append(empty)}daily.forEach(function(p){var row=document.createElement('div');row.className='schedule-item';var time=document.createElement('time');time.textContent=p.start+'–'+p.end;var detail=document.createElement('div'),name=document.createElement('strong'),sub=document.createElement('small');name.textContent=p.label;sub.textContent=(minutes(p.end)-minutes(p.start))+' นาที · แผนการซ้อม';detail.append(name,sub);var del=document.createElement('button');del.type='button';del.className='btn secondary';del.textContent='ลบ';del.setAttribute('aria-label','ลบแผน '+p.label);var armed=false;del.onclick=function(){if(!armed){armed=true;del.textContent='ยืนยัน';setTimeout(function(){armed=false;del.textContent='ลบ'},4000);return}if(save(plans.filter(function(x){return x.id!==p.id}))){render();$('plannerMsg').textContent='ลบแผนแล้ว'}};row.append(time,detail,del);list.append(row)})}
+$('scheduleForm').onsubmit=function(e){e.preventDefault();var date=$('planDate').value,start=$('planStart').value,end=$('planEnd').value,label=$('planLabel').value.trim();if(!date||!start||!end||!label)return;if(minutes(end)<=minutes(start)){$('plannerMsg').textContent='เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มในวันเดียวกัน';return}if(plans.some(function(p){return p.date===date&&start<p.end&&end>p.start})){$('plannerMsg').textContent='เวลาซ้อมชนกับแผนเดิม กรุณาเลือกช่วงเวลาใหม่';return}if(save(plans.concat([{id:Date.now()+'-'+Math.random().toString(36).slice(2),date:date,start:start,end:end,label:label}]))){choose(date);$('planLabel').value='';$('plannerMsg').textContent='เพิ่มแผนซ้อมแล้ว'}};
+$('prevMonth').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};$('nextMonth').onclick=function(){view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};$('planDate').onchange=function(){if(this.value)choose(this.value)};window.addEventListener('storage',function(){load();render()});document.addEventListener('visibilitychange',function(){if(!document.hidden){load();render()}});new MutationObserver(function(){render()}).observe($('logList'),{childList:true,subtree:true});window.addEventListener('studio-language',render);load();$('planDate').value=selected;render();
+})();
+</script>
+<script>
+(function(){'use strict';
+const $=id=>document.getElementById(id), locales={th:'th-TH',en:'en-US',zh:'zh-CN'};
+let lang='th';try{lang=localStorage.getItem('studio-language')||'th'}catch(e){}if(!locales[lang])lang='th';window.studioLocale=locales[lang];
+const words=[
+['ซ้อมและวางแผน','Practice & plan','练习与计划'],['สรุปและสถิติ','Summary & stats','总结与统计'],['ภาษา','Language','语言'],['ซ้อมวันนี้ เก่งขึ้นทุกวัน','Practice today. Grow every day.','每天练习，每天进步。'],['พื้นที่ส่วนตัวสำหรับโฟกัสกับเสียงดนตรี และเติบโตทีละวัน','Your space to focus on music and grow every day.','专注音乐，每天进步的个人空间。'],['ให้เวลากับสิ่งที่คุณรัก','Make time for what you love','为热爱的音乐留出时间'],['พร้อมเริ่มซ้อม','Ready to practice','准备开始练习'],['กำลังซ้อมอยู่…','Practicing…','正在练习…'],['กำลังซ้อม','Practicing','正在练习'],['พักอยู่','Paused','已暂停'],['รอบันทึก','Ready to save','等待保存'],['เริ่มซ้อม','Start practice','开始练习'],['พัก','Pause','暂停'],['ซ้อมต่อ','Resume','继续练习'],['หยุดและบันทึก','Stop & save','结束并保存'],['ซ้อมอะไรอยู่?','What did you practice?','练习了什么？'],['เลือกหรือพิมพ์ว่าซ้อมอะไร','Choose or type what you practiced','选择或输入练习内容'],['โน้ตสั้น ๆ (ไม่บังคับ)','Notes (optional)','备注（选填）'],['ซ้อมไม่ถึง 1 นาที จะบันทึกก็ได้','Less than a minute — you can still save it','不足一分钟也可以保存'],['บันทึก','Save','保存'],['ไม่บันทึก','Discard','不保存'],['บันทึกแล้ว','Saved','已保存'],['แน่ใจนะ? กดอีกครั้ง','Tap again to discard','再次点击确认放弃'],['7 วันล่าสุด','Last 7 days','最近7天'],['บันทึกล่าสุด','Recent sessions','最近练习'],['ยังไม่มีบันทึก กดเริ่มซ้อมเพื่อบันทึกครั้งแรก','No sessions yet. Start your first practice.','暂无记录，开始第一次练习吧。'],['ตั้งค่าและข้อมูล','Settings & data','设置与数据'],['เป้าหมายต่อวัน (นาที)','Daily goal (minutes)','每日目标（分钟）'],['ไม่ให้หน้าจอดับตอนจับเวลา','Keep screen awake while practicing','练习时保持屏幕常亮'],['คัดลอกสรุปสัปดาห์','Copy weekly summary','复制每周总结'],['คัดลอกข้อมูลสำรอง','Copy backup','复制备份'],['วางข้อมูลสำรอง','Paste backup','粘贴备份'],['นำเข้า','Import','导入'],['ล้างข้อมูลทั้งหมด','Clear all practice data','清除所有练习记录'],['ยืนยันล้างทั้งหมด','Confirm clearing all practice data','确认清除所有练习记录'],['ข้อมูลเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ส่งไปที่อื่น เพื่อนที่เปิดลิงก์เดียวกันจะไม่เห็นบันทึกของคุณ','Data stays in this browser. It is not shared with other visitors.','数据仅保存在此浏览器中，不会分享给其他访问者。'],['บันทึกการซ้อม · สร้างด้วย AI ช่วย · วิชา 3500230','Practice log · Created with AI assistance · Course 3500230','练习记录 · AI辅助制作 · 课程3500230'],['ปรับ UI/UX โดยใช้ ChatGPT ช่วยออกแบบและตรวจโค้ด','UI/UX designed and reviewed with ChatGPT assistance','界面由ChatGPT辅助设计与检查'],['เบราว์เซอร์นี้เก็บบันทึกไม่ได้ ข้อมูลจะหายเมื่อปิดหน้านี้','Storage is unavailable. Data will be lost when this page closes.','此浏览器无法保存数据，关闭页面后数据将丢失。'],['เวลานานผิดปกติ ตัดที่ 12 ชั่วโมง','Unusually long session capped at 12 hours','练习时间过长，已限制为12小时'],['ซ้อมต่อจากเดิม','Continue previous session','继续上次练习'],['หยุดและบันทึกตอนนี้','Stop and save now','立即结束并保存'],['วงเขียว = มีแผนซ้อม · จุดใต้วัน = มีบันทึกซ้อมจริง','Green circle = planned · Dot = recorded practice','绿色圆圈＝有计划 · 圆点＝有实际练习记录'],['นาทีที่วางแผน','Planned minutes','计划分钟数'],['นาทีที่ซ้อมจริง','Practiced minutes','实际练习分钟数'],['รอบที่ซ้อมจริง','Recorded sessions','实际练习次数'],['สรุปเฉพาะวันที่เลือก ข้อมูลซ้อมจริงมาจากตัวจับเวลา','Selected day only. Actual practice comes from the timer.','仅显示所选日期，实际练习来自计时器。'],['วันที่ซ้อม','Practice date','练习日期'],['เริ่ม','Start','开始'],['สิ้นสุด','End','结束'],['เพลง / สิ่งที่ต้องการฝึก','Piece / practice focus','曲目／练习重点'],['＋ เพิ่มเวลาซ้อม','＋ Add practice plan','＋ 添加练习计划'],['ยังไม่มีแผนวันนี้ เพิ่มช่วงเวลาซ้อมด้านล่าง','No plans for this day. Add a session below.','当天暂无计划，请在下方添加。'],['ลบ','Delete','删除'],['ยืนยัน','Confirm','确认'],['ยืนยันลบ','Confirm delete','确认删除'],['ลบแผนแล้ว','Plan deleted','计划已删除'],['เพิ่มแผนซ้อมแล้ว','Plan added','计划已添加'],['เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มในวันเดียวกัน','End time must be after start time on the same day.','结束时间必须晚于同一天的开始时间。'],['เวลาซ้อมชนกับแผนเดิม กรุณาเลือกช่วงเวลาใหม่','This overlaps another plan. Choose a different time.','此时间与其他计划重叠，请选择其他时间。'],['บันทึกแผนไม่ได้ กรุณาอนุญาตพื้นที่จัดเก็บของเบราว์เซอร์','Cannot save. Please enable browser storage.','无法保存，请启用浏览器存储。'],['สรุปการฝึกซ้อม','Practice summary','练习总结'],['วัน','Day','日'],['เดือน','Month','月'],['ปี','Year','年'],['เวลาซ้อมจริง','Actual practice','实际练习'],['รายละเอียดสถิติ','Statistics details','统计明细'],['ช่วงเวลา','Period','时间段'],['ซ้อมจริง (นาที)','Actual (min)','实际（分钟）'],['แผน (นาที)','Planned (min)','计划（分钟）'],['จำนวนรอบ','Sessions','次数'],['ตารางเวลาที่วางแผนไว้','Planned schedule','计划时间表'],['เวลาซ้อมจริงนับตามวันที่จบแต่ละรอบ ค่าเฉลี่ยรวมวันที่ไม่ได้ซ้อมด้วย แผนไม่ถือเป็นการซ้อมสำเร็จอัตโนมัติ','Practice is counted on the session end date. Averages include days without practice. Plans do not count as completed sessions.','实际练习按每次结束日期统计。平均值包含未练习的日期，计划不等于已完成练习。'],['ยังไม่มีข้อมูลซ้อมจริงในช่วงนี้','No recorded practice in this period','此时段暂无实际练习记录'],['ไม่มีแผนซ้อมในช่วงนี้','No plans in this period','此时段暂无练习计划'],['รวมเวลาซ้อมจริง','Total practice','实际练习总时长'],['รวมเวลาตามแผน','Total planned','计划总时长'],['เฉลี่ยต่อวัน','Daily average','日均时长'],['วันที่มีการซ้อม','Active days','练习天数'],['รอบที่บันทึก','Saved sessions','已保存次数'],['วันซ้อมมากที่สุด','Best day','练习最多的一天'],['สเกล','Scales','音阶'],['อาร์เปจโจ','Arpeggios','琶音'],['เพลงหลัก','Main piece','主练曲目'],['อ่านโน้ต','Sight-reading','视奏'],['ฝึกหู','Ear training','练耳'],['เทคนิค','Technique','技巧'],['คัดลอกแล้ว','Copied','已复制'],['ข้อมูลไม่ถูกต้อง ลองคัดลอกใหม่','Invalid data. Try copying again.','数据无效，请重新复制。'],['เช่น Chopin · มือซ้าย ห้อง 1–8','e.g. Chopin · left hand, bars 1–8','例如 Chopin · 左手，第1–8小节'],['เช่น Chopin Étude · ห้อง 1–8','e.g. Chopin Étude · bars 1–8','例如 Chopin练习曲 · 第1–8小节'],['เช่น มือซ้ายยังไม่สม่ำเสมอ รอบหน้าลองซ้อมช้าลง','e.g. Left hand uneven; practice slower next time.','例如：左手不均匀，下次放慢练习。'],['ตัวจับเวลา','Practice timer','练习计时器'],['ปฏิทินและตารางซ้อม','Calendar & schedule','日历与时间表'],['เดือนก่อน','Previous month','上个月'],['เดือนถัดไป','Next month','下个月'],['ช่วงก่อนหน้า','Previous period','上一时段'],['ช่วงถัดไป','Next period','下一时段'],['วันที่อ้างอิง','Reference date','参考日期'],['ลดเป้าหมาย','Decrease goal','减少目标'],['เพิ่มเป้าหมาย','Increase goal','增加目标'],['ข้อความที่คัดลอก','Copied text','复制文本'],['ซ้อมอะไร','Practice focus','练习内容']
+];
+const dict=new Map(words.map(w=>[w[0],w]));
+function T(s){return lang==='th'?s:(dict.has(s)?dict.get(s)[lang==='en'?1:2]:s)}
+function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
+function arr(k){let a=read(k);return Array.isArray(a)?a:[]}
+function key(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fmt(d,opts){return d.toLocaleDateString(locales[lang],opts)}
+const minUnit=()=>lang==='th'?'นาที':lang==='en'?'min':'分钟';
+function translate(s){let trim=s.trim(),out=T(trim);if(out!==trim)return s.replace(trim,out);if(lang==='th')return s;
+let m;if((m=trim.match(/^วันนี้ (\d+)\/(\d+) นาที$/)))return lang==='en'?`Today ${m[1]}/${m[2]} min`:`今天 ${m[1]}/${m[2]} 分钟`;
+if((m=trim.match(/^รวม (\d+) นาที · ซ้อมติดกัน (\d+) วัน$/)))return lang==='en'?`Total ${m[1]} min · ${m[2]}-day streak`:`总计 ${m[1]} 分钟 · 连续 ${m[2]} 天`;
+if((m=trim.match(/^เป้า (\d+) นาที$/)))return lang==='en'?`Goal ${m[1]} min`:`目标 ${m[1]} 分钟`;
+if((m=trim.match(/^(\d+) นาที · แผนการซ้อม$/)))return `${m[1]} ${minUnit()} · ${lang==='en'?'Planned':'计划'}`;
+if((m=trim.match(/^(< )?(\d+) นาที$/)))return (m[1]||'')+m[2]+' '+minUnit();
+if((m=trim.match(/^(\d+) ชม\. (\d+) นาที$/)))return lang==='en'?`${m[1]} h ${m[2]} min`:`${m[1]} 小时 ${m[2]} 分钟`;
+if((m=trim.match(/^นำเข้า (\d+) รายการ$/)))return lang==='en'?`Imported ${m[1]} entries`:`已导入 ${m[1]} 条记录`;
+if((m=trim.match(/^พบเวลาที่ค้างอยู่ \((.+)\)$/)))return lang==='en'?`Previous session found (${m[1]})`:`发现上次练习（${m[1]}）`;
+if(trim==='วันนี้')return lang==='en'?'Today':'今天';if(trim==='เมื่อวาน')return lang==='en'?'Yesterday':'昨天';
+const dow={'จ':['Mon','一'],'อ':['Tue','二'],'พ':['Wed','三'],'พฤ':['Thu','四'],'ศ':['Fri','五'],'ส':['Sat','六'],'อา':['Sun','日']};
+if(dow[trim])return dow[trim][lang==='en'?0:1];
+if((m=trim.match(/^(วันนี้ )?(อา|จ|อ|พ|พฤ|ศ|ส)\.$/)))return (m[1]?(lang==='en'?'Today ':'今天 '):'')+dow[m[2]][lang==='en'?0:1];
+const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+if((m=trim.match(/^(?:อา|จ|อ|พ|พฤ|ศ|ส)\. (\d+) (.+) (\d+)$/))&&months.includes(m[2]))return fmt(new Date(Number(m[3])-543,months.indexOf(m[2]),Number(m[1])),{day:'numeric',month:'short',year:'numeric'});
+return s}
+const originals=new WeakMap(),attributes=new WeakMap();
+const observer=new MutationObserver(()=>localize());
+function localize(){observer.disconnect();const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;while(n=walker.nextNode()){if(!n.parentElement||n.parentElement.closest('script,style,textarea,option,.entry-label,.entry-note,#scheduleList strong,#reportPlans strong,[data-own-i18n]'))continue;let record=originals.get(n);if(!record||n.nodeValue!==record.output)record={source:n.nodeValue};const output=translate(record.source);if(output!==n.nodeValue)n.nodeValue=output;record.output=output;originals.set(n,record)}document.querySelectorAll('[placeholder],[aria-label]').forEach(el=>{let store=attributes.get(el)||{};['placeholder','aria-label'].forEach(a=>{if(!el.hasAttribute(a))return;let rec=store[a];if(!rec||el.getAttribute(a)!==rec.output)rec={source:el.getAttribute(a)};let output=translate(rec.source);if(el.getAttribute(a)!==output)el.setAttribute(a,output);rec.output=output;store[a]=rec});attributes.set(el,store)});observer.observe(document.body,{subtree:true,childList:true,characterData:true});}
+let period='month',anchor=new Date();
+function range(){let y=anchor.getFullYear(),m=anchor.getMonth(),d=anchor.getDate();return period==='day'?[new Date(y,m,d),new Date(y,m,d+1)]:period==='month'?[new Date(y,m,1),new Date(y,m+1,1)]:[new Date(y,0,1),new Date(y+1,0,1)]}
+function data(){const [start,end]=range(),logs=arr('practice-log-entries-v1').filter(e=>e&&Number.isFinite(e.seconds)&&e.seconds>=0&&new Date(e.endedAt)>=start&&new Date(e.endedAt)<end),plans=arr('piano-studio-plans-v1').filter(p=>p&&typeof p.date==='string'&&p.date>=key(start)&&p.date<key(end)&&/^\d{2}:\d{2}$/.test(p.start)&&/^\d{2}:\d{2}$/.test(p.end)),minute=t=>Number(t.slice(0,2))*60+Number(t.slice(3)),planned=p=>Math.max(0,minute(p.end)-minute(p.start));
+const count=period==='day'?24:period==='month'?new Date(anchor.getFullYear(),anchor.getMonth()+1,0).getDate():12,buckets=Array.from({length:count},(_,i)=>({label:period==='day'?String(i).padStart(2,'0')+':00':period==='month'?String(i+1):fmt(new Date(anchor.getFullYear(),i,1),{month:'short'}),actual:0,plan:0,sessions:0}));
+logs.forEach(e=>{let d=new Date(e.endedAt),i=period==='day'?d.getHours():period==='month'?d.getDate()-1:d.getMonth();buckets[i].actual+=e.seconds/60;buckets[i].sessions++});plans.forEach(p=>{if(period==='day'){let a=minute(p.start),b=minute(p.end);buckets.forEach((v,i)=>v.plan+=Math.max(0,Math.min(b,(i+1)*60)-Math.max(a,i*60)))}else{let d=new Date(p.date+'T12:00:00');buckets[period==='month'?d.getDate()-1:d.getMonth()].plan+=planned(p)}});
+let byDay={};logs.forEach(e=>{let k=key(new Date(e.endedAt));byDay[k]=(byDay[k]||0)+e.seconds});let days=period==='day'?1:period==='month'?count:(new Date(anchor.getFullYear(),1,29).getMonth()===1?366:365),seconds=logs.reduce((a,e)=>a+e.seconds,0);return{logs,plans,buckets,seconds,days,active:Object.keys(byDay).length,best:Math.max(0,...Object.values(byDay))/60,planned:plans.reduce((a,p)=>a+planned(p),0)}}
+function el(tag,text,cls){let e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
+function num(n){return n.toLocaleString(locales[lang],{maximumFractionDigits:1})}
+function renderReport(){let d=data();$('reportRange').textContent=fmt(anchor,period==='day'?{day:'numeric',month:'long',year:'numeric'}:period==='month'?{month:'long',year:'numeric'}:{year:'numeric'});$('reportDate').value=key(anchor);document.querySelectorAll('[data-period]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.period===period)));let metrics=$('reportMetrics');metrics.replaceChildren();[['รวมเวลาซ้อมจริง',num(d.seconds/60)+' '+minUnit()],['รวมเวลาตามแผน',num(d.planned)+' '+minUnit()],['เฉลี่ยต่อวัน',num(d.seconds/60/d.days)+' '+minUnit()],['วันที่มีการซ้อม',d.active+' / '+d.days],['รอบที่บันทึก',num(d.logs.length)],['วันซ้อมมากที่สุด',num(d.best)+' '+minUnit()]].forEach(([label,value])=>{let cell=el('div',undefined,'metric');cell.append(el('b',value),el('span',T(label)));metrics.append(cell)});let chart=$('reportChart'),rows=$('reportRows');chart.replaceChildren();rows.replaceChildren();const max=Math.max(1,...d.buckets.map(b=>b.actual));d.buckets.forEach((b,i)=>{let col=el('div',undefined,'report-column'),bar=el('div',undefined,'report-bar');bar.style.height=(b.actual/max*135)+'px';col.title=b.label+': '+num(b.actual)+' '+minUnit();col.append(bar,el('small',d.buckets.length>12&&i%3!==0?'':b.label));chart.append(col);let row=el('tr');[b.label,num(b.actual),num(b.plan),String(b.sessions)].forEach(v=>row.append(el('td',v)));rows.append(row)});chart.setAttribute('aria-label',T('เวลาซ้อมจริง')+': '+num(d.seconds/60)+' '+minUnit());$('reportEmpty').textContent=d.logs.length?'':T('ยังไม่มีข้อมูลซ้อมจริงในช่วงนี้');let list=$('reportPlans');list.replaceChildren();if(!d.plans.length)list.append(el('p',T('ไม่มีแผนซ้อมในช่วงนี้'),'planner-help'));d.plans.sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start)).forEach(p=>{let row=el('div',undefined,'schedule-item'),detail=el('div');detail.append(el('strong',p.label),el('small',fmt(new Date(p.date+'T12:00:00'),{day:'numeric',month:'short',year:'numeric'})));row.append(el('time',p.start+'–'+p.end),detail);list.append(row)});localize()}
+function page(which){document.body.dataset.page=which;$('summaryPage').hidden=which!=='summary';$('navSummary').setAttribute('aria-current',which==='summary'?'page':'false');$('navPractice').setAttribute('aria-current',which==='practice'?'page':'false');if(which==='summary')renderReport()}
+$('navSummary').onclick=()=>page('summary');$('navPractice').onclick=()=>page('practice');document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{period=b.dataset.period;renderReport()});$('reportDate').onchange=function(){if(this.value){anchor=new Date(this.value+'T12:00:00');renderReport()}};
+function move(n){if(period==='day')anchor.setDate(anchor.getDate()+n);else if(period==='month')anchor=new Date(anchor.getFullYear(),anchor.getMonth()+n,1);else anchor=new Date(anchor.getFullYear()+n,0,1);renderReport()};$('reportPrev').onclick=()=>move(-1);$('reportNext').onclick=()=>move(1);
+function setLanguage(v){lang=v;window.studioLocale=locales[lang];document.documentElement.lang=lang==='zh'?'zh-CN':lang;$('appLanguage').value=lang;try{localStorage.setItem('studio-language',lang)}catch(e){}window.dispatchEvent(new Event('studio-language'));renderReport();localize()}
+$('appLanguage').onchange=function(){setLanguage(this.value)};new MutationObserver(()=>{if(document.body.dataset.page==='summary')renderReport()}).observe($('logList'),{childList:true});window.addEventListener('storage',()=>{if(document.body.dataset.page==='summary')renderReport()});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.body.dataset.page==='summary')renderReport()});setLanguage(lang);page('practice');
+window.studioReportTest={data,select:(p,date)=>{period=p;anchor=new Date(date+'T12:00:00');return data()}};
+})();
+
+</script>
+
+
+</body>
+</html>
