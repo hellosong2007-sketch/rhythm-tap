@@ -199,12 +199,27 @@ footer{margin:18px 0 8px;text-align:center;font-size:14.4px;color:var(--text-sof
 @media (prefers-reduced-motion: reduce){
   *{transition:none!important}
 }
+
+/* UI improvement 1: emerald studio theme, local styles only */
+:root{--bg:#081711;--surface:#10271e;--surface-2:#173529;--line:#2b4d3d;--line-strong:#476d58;--text:#f0fff5;--text-soft:#d2e9db;--muted:#a5c4b2;--action:#8bf0b1;--action-ink:#092418;--action-soft:#214c36;--blue:#a9c9ff;--blue-soft:#203d57;--good:#92edb2;--warn:#ffce7c;--bad:#ff9b98;--shadow-soft:#0006;--pad-ring:#fff6;color-scheme:dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#081711;--surface:#10271e;--surface-2:#173529;--line:#2b4d3d;--line-strong:#476d58;--text:#f0fff5;--text-soft:#d2e9db;--muted:#a5c4b2;--action:#8bf0b1;--action-ink:#092418;--blue:#a9c9ff;--good:#92edb2;--warn:#ffce7c;--bad:#ff9b98}}
+body{background:radial-gradient(ellipse at 50% 0,#204531 0,transparent 65%),var(--bg)}
+.app{max-width:620px;padding-top:28px}
+header{margin-bottom:24px}h1{font-size:clamp(28px,7vw,38px);letter-spacing:-.8px}
+.studio-kicker{margin:0;text-align:center;color:var(--action);font-size:11px;font-weight:700;letter-spacing:3px}
+.studio-intro{color:var(--muted);text-align:center;margin:6px 0 16px;font-size:14px}
+.round{display:table;margin:12px auto 0;padding:5px 16px;border:1px solid var(--line);border-radius:99px;font-size:13px}
+.stage{border-radius:24px;padding:20px;box-shadow:0 16px 50px #0002}
+.status{padding:12px;border-radius:12px;background:var(--surface-2)}
+.seg button[aria-pressed="true"]{background:var(--action);color:var(--action-ink);box-shadow:none}
+footer{font-size:12px;line-height:1.8}
+
 </style>
 </head>
 <body>
 <main class="app">
   <header>
-    <h1>เกมตบจังหวะ</h1>
+    <p class="studio-kicker">RHYTHM STUDIO</p><h1>เกมตบจังหวะ</h1><p class="studio-intro">ฟังให้ชัด · จับจังหวะ · ตบให้แม่น</p>
     <div class="round" id="roundLbl">รอบ –/10</div>
   </header>
 
